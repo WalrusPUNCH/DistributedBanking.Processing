@@ -1,0 +1,3 @@
+[submodule "DistributedBanking.Shared"]
+	path = DistributedBanking.Shared
+	url = https://github.com/WalrusPUNCH/DistributedBanking.Shared.git
