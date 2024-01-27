@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
+        <PackageReference Include="MongoDB.Driver" Version="2.23.1" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <ProjectReference Include="..\DistributedBanking.Shared\Contracts\Contracts.csproj" />
+      <ProjectReference Include="..\DistributedBanking.Shared\Shared.Data\Shared.Data.csproj" />
+      <ProjectReference Include="..\TransactionalClock.Integration\TransactionalClock.Integration.csproj" />
+    </ItemGroup>
+
+</Project>

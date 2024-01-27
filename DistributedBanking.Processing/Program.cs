@@ -1,15 +1,20 @@
+using DistributedBanking.Processing.Extensions;
+
 var builder = WebApplication.CreateBuilder(args);
+var configuration = builder.Configuration;
 
-// Add services to the container.
+builder.Services
+    .AddApi(configuration)
+    .AddServices(configuration)
+    .ConfigureOptions(configuration);
 
-builder.Services.AddControllers();
+builder.Host.UseSerilogAppLogging();
 
-var app = builder.Build();
+var application = builder.Build();
+application
+    .UseAppSerilog()
+    .UseMiddleware()
+    .UseAutoWrapper()
+    .UseAppCore();
 
-// Configure the HTTP request pipeline.
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
+await application.RunAsync();

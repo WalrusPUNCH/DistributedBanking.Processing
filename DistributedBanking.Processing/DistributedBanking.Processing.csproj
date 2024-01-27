@@ -9,6 +9,20 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
+    <PackageReference Include="AutoWrapper.Core" Version="4.5.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.15" />
+    <PackageReference Include="Refit.HttpClientFactory" Version="7.0.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.0" />
+    <PackageReference Include="Serilog.Enrichers.Environment" Version="2.3.0" />
+    <PackageReference Include="Serilog.Enrichers.Thread" Version="3.1.0" />
+    <PackageReference Include="Serilog.Exceptions" Version="8.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DistributedBanking.Processing.Data\DistributedBanking.Processing.Data.csproj" />
+    <ProjectReference Include="..\DistributedBanking.Processing.Domain\DistributedBanking.Processing.Domain.csproj" />
+    <ProjectReference Include="..\DistributedBanking.Shared\Shared.Data\Shared.Data.csproj" />
+    <ProjectReference Include="..\TransactionalClock.Integration\TransactionalClock.Integration.csproj" />
   </ItemGroup>
 
 </Project>
