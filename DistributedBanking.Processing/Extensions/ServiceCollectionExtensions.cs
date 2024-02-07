@@ -19,6 +19,12 @@ using Shared.Data.Converters;
 using Shared.Data.Entities;
 using Shared.Data.Services;
 using Shared.Data.Services.Implementation.MongoDb;
+using Shared.Kafka.Extensions;
+using Shared.Kafka.Messages.Account;
+using Shared.Kafka.Messages.Identity;
+using Shared.Kafka.Messages.Identity.Registration;
+using Shared.Kafka.Messages.Transaction;
+using Shared.Kafka.Options;
 using Shared.Redis.Extensions;
 using System.Text.Json;
 using TransactionalClock.Integration;
@@ -34,20 +40,6 @@ public static class ServiceCollectionExtensions
     {
         services.Configure<DatabaseOptions>(configuration.GetSection(nameof(DatabaseOptions)));
         
-        return services;
-    }
-    
-    internal static IServiceCollection AddBackgroundListeners(this IServiceCollection services)
-    {
-        services
-            .AddHostedService<AccountCreationListener>()
-            .AddHostedService<AccountDeletionListener>()
-            .AddHostedService<CustomerInformationUpdateListener>()
-            .AddHostedService<CustomerRegistrationListener>()
-            .AddHostedService<EndUserDeletionListener>()
-            .AddHostedService<WorkerRegistrationListener>()
-            .AddHostedService<TransactionsListener>();
-
         return services;
     }
     
@@ -69,7 +61,36 @@ public static class ServiceCollectionExtensions
             .AddTransient<ITransactionService, TransactionService>();
         
         services.AddRedis(configuration);
+
+        services.AddKafkaConsumers(configuration);
         
+        return services;
+    }
+    
+    private static IServiceCollection AddKafkaConsumers(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddKafkaConsumer<string, UserRegistrationMessage>(configuration, KafkaTopicSource.CustomersRegistration);
+        services.AddKafkaConsumer<string, WorkerRegistrationMessage>(configuration, KafkaTopicSource.WorkersRegistration);
+        services.AddKafkaConsumer<string, CustomerInformationUpdateMessage>(configuration, KafkaTopicSource.CustomersUpdate);
+        services.AddKafkaConsumer<string, EndUserDeletionMessage>(configuration, KafkaTopicSource.UsersDeletion);
+        services.AddKafkaConsumer<string, AccountCreationMessage>(configuration, KafkaTopicSource.AccountCreation);
+        services.AddKafkaConsumer<string, AccountDeletionMessage>(configuration, KafkaTopicSource.AccountDeletion);
+        services.AddKafkaConsumer<string, TransactionMessage>(configuration, KafkaTopicSource.TransactionsCreation);
+        
+        return services;
+    }
+    
+    internal static IServiceCollection AddBackgroundListeners(this IServiceCollection services)
+    {
+        services
+            .AddHostedService<AccountCreationListener>()
+            .AddHostedService<AccountDeletionListener>()
+            .AddHostedService<CustomerInformationUpdateListener>()
+            .AddHostedService<CustomerRegistrationListener>()
+            .AddHostedService<EndUserDeletionListener>()
+            .AddHostedService<WorkerRegistrationListener>()
+            .AddHostedService<TransactionsListener>();
+
         return services;
     }
     
