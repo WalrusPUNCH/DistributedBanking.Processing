@@ -1,19 +1,15 @@
-﻿using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using DistributedBanking.Processing.Data.Repositories;
+﻿using DistributedBanking.Processing.Data.Repositories;
 using DistributedBanking.Processing.Data.Repositories.Base;
 using DistributedBanking.Processing.Data.Repositories.Implementation;
 using DistributedBanking.Processing.Domain.Models.Transaction;
 using DistributedBanking.Processing.Domain.Options;
 using DistributedBanking.Processing.Domain.Services;
 using DistributedBanking.Processing.Domain.Services.Implementation;
-using DistributedBanking.Processing.Helpers;
+using DistributedBanking.Processing.Listeners.Account;
+using DistributedBanking.Processing.Listeners.Identity;
+using DistributedBanking.Processing.Listeners.Transaction;
 using Mapster;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.IdentityModel.Tokens;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
@@ -23,82 +19,60 @@ using Shared.Data.Converters;
 using Shared.Data.Entities;
 using Shared.Data.Services;
 using Shared.Data.Services.Implementation.MongoDb;
+using Shared.Redis.Extensions;
+using System.Text.Json;
 using TransactionalClock.Integration;
 using TransactionalClock.Integration.DelegationHandlers;
 using TransactionalClock.Integration.Options;
+// ReSharper disable UnusedMethodReturnValue.Local
 
 namespace DistributedBanking.Processing.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    internal static IServiceCollection AddApi(this IServiceCollection services, IConfiguration configuration)
+    internal static IServiceCollection ConfigureOptions(this IServiceCollection services, IConfiguration configuration)
     {
-        var jwtOptions = configuration.GetSection(nameof(JwtOptions)).Get<JwtOptions>();
-        ArgumentNullException.ThrowIfNull(jwtOptions);
-        
-        services.AddControllers()
-            .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-
-        services
-            .AddRouting()
-            .AddAuthentication(x =>
-            {
-                x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            .AddJwtBearer(x =>
-            {
-                x.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidIssuer = jwtOptions.Issuer,
-                    ValidAudience = jwtOptions.Audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key)),
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true
-                };
-            });
-        
-        services
-            .AddAuthorization()
-            .AddEndpointsApiExplorer()
-            .AddHttpContextAccessor()
-            .AddMapster();
+        services.Configure<DatabaseOptions>(configuration.GetSection(nameof(DatabaseOptions)));
         
         return services;
     }
     
-    internal static IServiceCollection ConfigureOptions(this IServiceCollection services, IConfiguration configuration)
+    internal static IServiceCollection AddBackgroundListeners(this IServiceCollection services)
     {
-        services.Configure<ApiBehaviorOptions>(options =>
-        {
-            options.InvalidModelStateResponseFactory = CustomInvalidModelStateResponseFactory.MakeFailedValidationResponse;
-        });
+        services
+            .AddHostedService<AccountCreationListener>()
+            .AddHostedService<AccountDeletionListener>()
+            .AddHostedService<CustomerInformationUpdateListener>()
+            .AddHostedService<CustomerRegistrationListener>()
+            .AddHostedService<EndUserDeletionListener>()
+            .AddHostedService<WorkerRegistrationListener>()
+            .AddHostedService<TransactionsListener>();
 
-        services.Configure<DatabaseOptions>(configuration.GetSection(nameof(DatabaseOptions)));
-        services.Configure<JwtOptions>(configuration.GetSection(nameof(JwtOptions)));
-        
         return services;
     }
     
     internal static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddMapster();
+
         services
             .AddMongoDatabase(configuration)
             .AddDataRepositories();
 
+        services.AddTransactionalClockIntegration(configuration);
+        
         services
             .AddTransient<IUserManager, UserManager>()
             .AddTransient<IAccountService, AccountService>()
             .AddTransient<IPasswordHashingService, PasswordHashingService>()
             .AddTransient<IIdentityService, IdentityService>()
             .AddTransient<ITransactionService, TransactionService>();
-
+        
+        services.AddRedis(configuration);
+        
         return services;
     }
-
+    
     private static IServiceCollection AddMapster(this IServiceCollection services)
     {
         TypeAdapterConfig<TransactionEntity, TransactionResponseModel>.NewConfig()
@@ -148,7 +122,7 @@ public static class ServiceCollectionExtensions
         return services;
     }
     
-    public static IServiceCollection AddTransactionalClockIntegration(this IServiceCollection services, IConfiguration configuration)
+    private static IServiceCollection AddTransactionalClockIntegration(this IServiceCollection services, IConfiguration configuration)
     {
         var transactionalClockOptions = configuration.GetSection(nameof(TransactionalClockOptions)).Get<TransactionalClockOptions>();
         ArgumentNullException.ThrowIfNull(transactionalClockOptions);

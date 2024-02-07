@@ -2,5 +2,5 @@
 
 public class OneWaySecuredTransactionModel : OneWayTransactionModel
 {
-    public string SecurityCode { get; set; }
+    public required string SecurityCode { get; set; }
 }

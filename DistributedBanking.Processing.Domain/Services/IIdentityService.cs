@@ -8,7 +8,7 @@ public interface IIdentityService
     Task<IdentityOperationResult> RegisterUser(
         EndUserRegistrationModel registrationModel, string role);
     
-    Task DeleteUser(string email);
+    Task<OperationStatusModel> DeleteUser(string email);
     
     Task<OperationStatusModel> UpdateCustomerPersonalInformation(string customerId, CustomerPassportModel customerPassport);
 }
