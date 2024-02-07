@@ -75,11 +75,27 @@ public class UserManager : IUserManager
         }
     }
 
-    public async Task<UserModel?> FindByEmailAsync(string email)
+    public async Task<UserModel?> GetByEmailAsync(string email)
     {
         try
         {
             var user = await _usersRepository.GetByEmailAsync(email);
+
+            return user?.Adapt<UserModel>();
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "Error occurred while trying to find user by email");
+
+            return null;
+        }
+    }
+
+    public async Task<UserModel?> GetByIdAsync(string id)
+    {
+        try
+        {
+            var user = await _usersRepository.GetAsync(new ObjectId(id));
 
             return user?.Adapt<UserModel>();
         }
@@ -118,7 +134,7 @@ public class UserManager : IUserManager
     public async Task<IEnumerable<string>> GetRolesAsync(ObjectId userId)
     {
         var user = await _usersRepository.GetAsync(userId);
-        if (!user.Roles.Any())
+        if (user == null || !user.Roles.Any())
         {
             return Array.Empty<string>();
         }
@@ -126,7 +142,11 @@ public class UserManager : IUserManager
         var roleNames = new List<string>();
         foreach (var roleId in user.Roles)
         {
-            roleNames.Add((await _rolesRepository.GetAsync(new ObjectId(roleId))).Name);
+            var roleName = (await _rolesRepository.GetAsync(new ObjectId(roleId)))?.Name;
+            if (!string.IsNullOrWhiteSpace(roleName))
+            {
+                roleNames.Add(roleName);
+            }
         }
 
         return roleNames;
@@ -135,6 +155,11 @@ public class UserManager : IUserManager
     public async Task<bool> IsInRoleAsync(ObjectId userId, string roleName)
     {
         var user = await _usersRepository.GetAsync(userId);
+        if (user == null)
+        {
+            return false;
+        }
+        
         var roleId = (await _rolesRepository.GetAsync(r => r.NormalizedName == roleName.NormalizeString())).FirstOrDefault()?.Id;
         
         return roleId != null && user.Roles.Contains(roleId.Value.ToString());

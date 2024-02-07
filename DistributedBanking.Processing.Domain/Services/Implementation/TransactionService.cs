@@ -27,44 +27,18 @@ public class TransactionService : ITransactionService
     
     public async Task<OperationStatusModel> Deposit(OneWayTransactionModel depositTransactionModel)
     {
-        throw new NotImplementedException();
-        // _transactionsQueue.EnqueueAsync(() => DepositInternal(depositTransactionModel));
-    }
-    
-    public async Task<OperationStatusModel> Withdraw(OneWaySecuredTransactionModel withdrawTransactionModel)
-    {
-        throw new NotImplementedException();
-        //_transactionsQueue.EnqueueAsync(() => WithdrawInternal(withdrawTransactionModel));
-    }
-    
-    public async Task<OperationStatusModel> Transfer(TwoWayTransactionModel transferTransactionModel)
-    {
-        throw new NotImplementedException();
-       // _transactionsQueue.EnqueueAsync(() => TransferInternal(transferTransactionModel));    
-    }
-
-    public async Task<decimal> GetBalance(string accountId)
-    {
-        var account = await _accountsRepository.GetAsync(new ObjectId(accountId));
-        
-        return account.Balance;
-    }
-
-    public async Task<IEnumerable<TransactionResponseModel>> GetAccountTransactionHistory(string accountId)
-    {
-        var transactions = await _transactionsRepository.AccountTransactionHistory(accountId);
-
-        return transactions.Adapt<TransactionResponseModel[]>();
-    }
-    
-    private async Task<OperationStatusModel> DepositInternal(OneWayTransactionModel depositTransactionModel)
-    {
         try
         {
             var account = await _accountsRepository.GetAsync(new ObjectId(depositTransactionModel.SourceAccountId));
+            if (account == null)
+            {
+                _logger.LogWarning("Requested deposit account '{AccountId}' does not exist", depositTransactionModel.SourceAccountId);
+                return OperationStatusModel.Fail("Error occured while trying to deposit your account. Try again later");
+            }
+            
             if (!AccountValidator.IsAccountValid(account))
             {
-                return OperationStatusModel.Fail("Account is expired.");
+                return OperationStatusModel.Fail("The account you are trying to deposit is expired");
             }
             
             account.Balance += depositTransactionModel.Amount;
@@ -82,21 +56,27 @@ public class TransactionService : ITransactionService
         }
     }
     
-    private async Task<OperationStatusModel> WithdrawInternal(OneWaySecuredTransactionModel withdrawTransactionModel)
+    public async Task<OperationStatusModel> Withdraw(OneWaySecuredTransactionModel withdrawTransactionModel)
     {
         try
         {
             var account = await _accountsRepository.GetAsync(new ObjectId(withdrawTransactionModel.SourceAccountId));
+            if (account == null)
+            {
+                _logger.LogWarning("Requested withdrawal account '{AccountId}' does not exist", withdrawTransactionModel.SourceAccountId);
+                return OperationStatusModel.Fail("Error occured while trying to withdraw from your account. Try again later");
+            }
+            
             if (!AccountValidator.IsAccountValid(account, withdrawTransactionModel.SecurityCode))
             {
                 return OperationStatusModel.Fail("Provided account information is not valid. Account is expired or entered " +
-                                                 "security code is not correct.");
+                                                 "security code is not correct");
             }
             
             if (account.Balance < withdrawTransactionModel.Amount)
             {
                 return OperationStatusModel.Fail("Insufficient funds. " +
-                                                 "The transaction cannot be completed due to a lack of available funds in the account.");
+                                                 "The transaction cannot be completed due to a lack of available funds in the account");
             }
             
             account.Balance -= withdrawTransactionModel.Amount;
@@ -114,27 +94,35 @@ public class TransactionService : ITransactionService
         }
     }
     
-    private async Task<OperationStatusModel> TransferInternal(TwoWayTransactionModel transferTransactionModel)
+    public async Task<OperationStatusModel> Transfer(TwoWayTransactionModel transferTransactionModel)
     {
         try
         {
             var destinationAccount = await _accountsRepository.GetAsync(new ObjectId(transferTransactionModel.DestinationAccountId));
             var sourceAccount = await _accountsRepository.GetAsync(new ObjectId(transferTransactionModel.SourceAccountId));
+            if (destinationAccount == null || sourceAccount == null)
+            {
+                _logger.LogWarning("One of the requested transfer accounts '{SourceAccountId}' or '{DestinationAccountId}' does not exist",
+                    transferTransactionModel.SourceAccountId, transferTransactionModel.DestinationAccountId);
+                
+                return OperationStatusModel.Fail("Error occured while trying to make requested transfer from your account. Try again later");
+            }
+            
             if (!AccountValidator.IsAccountValid(sourceAccount, transferTransactionModel.SourceAccountSecurityCode))
             {
-                return OperationStatusModel.Fail("Provided account information is not valid. Account is expired or entered " +
-                                                   "security code is not correct.");
+                return OperationStatusModel.Fail("Your account information is not valid. Account is expired or entered " +
+                                                   "security code is not correct");
             }
             
             if (!AccountValidator.IsAccountValid(destinationAccount))
             {
-                return OperationStatusModel.Fail("Destination account information is not valid. Account is probably expired.");
+                return OperationStatusModel.Fail("Destination account information is not valid. Account is probably expired");
             }
             
             if (sourceAccount.Balance < transferTransactionModel.Amount)
             {
                 return OperationStatusModel.Fail("Insufficient funds. " +
-                                                   "The transaction cannot be completed due to a lack of available funds in the account.");
+                                                   "The transaction cannot be completed due to a lack of available funds in the account");
             }
             
             sourceAccount.Balance -= transferTransactionModel.Amount;
@@ -154,5 +142,19 @@ public class TransactionService : ITransactionService
                 transferTransactionModel.SourceAccountId, transferTransactionModel.DestinationAccountId);
             throw;
         }
+    }
+
+    public async Task<decimal> GetBalance(string accountId)
+    {
+        var account = await _accountsRepository.GetAsync(new ObjectId(accountId));
+        
+        return account?.Balance ?? 0;
+    }
+
+    public async Task<IEnumerable<TransactionResponseModel>> GetAccountTransactionHistory(string accountId)
+    {
+        var transactions = await _transactionsRepository.AccountTransactionHistory(accountId);
+
+        return transactions.Adapt<TransactionResponseModel[]>();
     }
 }

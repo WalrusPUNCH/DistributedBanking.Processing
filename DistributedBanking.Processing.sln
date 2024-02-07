@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Shared.Data", "DistributedB
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Kafka", "DistributedBanking.Shared\Shared.Kafka\Shared.Kafka.csproj", "{9BB24640-54FD-49BB-808B-BCB3E77FF12B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Redis", "DistributedBanking.Shared\Shared.Redis\Shared.Redis.csproj", "{2355B16B-D841-433F-B707-CEC7F0EDFB0D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +55,10 @@ Global
 		{9BB24640-54FD-49BB-808B-BCB3E77FF12B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9BB24640-54FD-49BB-808B-BCB3E77FF12B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9BB24640-54FD-49BB-808B-BCB3E77FF12B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2355B16B-D841-433F-B707-CEC7F0EDFB0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2355B16B-D841-433F-B707-CEC7F0EDFB0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2355B16B-D841-433F-B707-CEC7F0EDFB0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2355B16B-D841-433F-B707-CEC7F0EDFB0D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -61,6 +67,7 @@ Global
 		{31C81B69-107F-44FA-A326-6147698EB08B} = {8A3ADC87-3D94-488A-BCA4-21DAA65B3A8E}
 		{859CFE88-26DA-4C35-99DC-D340550766F2} = {8A3ADC87-3D94-488A-BCA4-21DAA65B3A8E}
 		{9BB24640-54FD-49BB-808B-BCB3E77FF12B} = {8A3ADC87-3D94-488A-BCA4-21DAA65B3A8E}
+		{2355B16B-D841-433F-B707-CEC7F0EDFB0D} = {8A3ADC87-3D94-488A-BCA4-21DAA65B3A8E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {51E268F3-06A8-45DC-8D98-28ED2FEA1089}

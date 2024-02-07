@@ -45,7 +45,7 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
         return await Collection.Find(filter).ToListAsync();
     }
 
-    public virtual async Task<T> GetAsync(ObjectId id)
+    public virtual async Task<T?> GetAsync(ObjectId id)
     {
         var filter = _filterBuilder.Eq(e => e.Id, id);
         return await Collection.Find(filter).FirstOrDefaultAsync();

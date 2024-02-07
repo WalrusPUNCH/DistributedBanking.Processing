@@ -37,9 +37,9 @@ public class IdentityService : IIdentityService
         return await RegisterUserInternal(registrationModel, role);
     }
     
-    private async Task<IdentityOperationResult> RegisterUserInternal(EndUserRegistrationModel registrationModel, string role)
+    private async Task<IdentityOperationResult> RegisterUserInternal(EndUserRegistrationModel registrationModel, string role, CancellationToken cancellationToken = default)
     {
-        var existingUser = await _usersManager.FindByEmailAsync(registrationModel.Email);
+        var existingUser = await _usersManager.GetByEmailAsync(registrationModel.Email);
         if (existingUser != null)
         {
             return IdentityOperationResult.Failed("User with the same email already exists");
@@ -84,28 +84,37 @@ public class IdentityService : IIdentityService
         return userCreationResult;
     }
     
-    public async Task DeleteUser(string email)
+    public async Task<OperationStatusModel> DeleteUser(string id)
     {
-        var appUser = await _usersManager.FindByEmailAsync(email);
-        if (appUser != null)
+        var appUser = await _usersManager.GetByIdAsync(id); // todo fix inconsistency in Ids and emails between here and client
+        if (appUser == null)
         {
-            if (await _usersManager.IsInRoleAsync(appUser.Id, RoleNames.Customer))
-            {
-                var customer = await _customersRepository.GetAsync(new ObjectId(appUser.EndUserId));
-                foreach (var customerAccountId in customer.Accounts)
-                {
-                    await _accountService.DeleteAsync(customerAccountId);
-                }
-                
-                await _customersRepository.RemoveAsync(new ObjectId(appUser.EndUserId));
-            }
-            else if (await _usersManager.IsInRoleAsync(appUser.Id, RoleNames.Worker))
-            {
-                await _workersRepository.RemoveAsync(new ObjectId(appUser.EndUserId));
-            }
-            
-            await _usersManager.DeleteAsync(appUser.Id);
+            return OperationStatusModel.Fail("Specified user does not exist");
         }
+
+        if (await _usersManager.IsInRoleAsync(appUser.Id, RoleNames.Customer))
+        {
+            var customer = await _customersRepository.GetAsync(new ObjectId(appUser.EndUserId));
+            if (customer == null)
+            {
+                _logger.LogError("Customer with the ID specified in end user does not exist");
+                return OperationStatusModel.Fail("Error occured while trying to delete user. Try again later");
+            }
+            foreach (var customerAccountId in customer.Accounts)
+            {
+                await _accountService.DeleteAsync(customerAccountId);
+            }
+                
+            await _customersRepository.RemoveAsync(new ObjectId(appUser.EndUserId));
+        }
+        else if (await _usersManager.IsInRoleAsync(appUser.Id, RoleNames.Worker))
+        {
+            await _workersRepository.RemoveAsync(new ObjectId(appUser.EndUserId));
+        }
+            
+        await _usersManager.DeleteAsync(appUser.Id);
+        
+        return OperationStatusModel.Success();
     }
 
     public async Task<OperationStatusModel> UpdateCustomerPersonalInformation(string customerId, CustomerPassportModel customerPassport)
@@ -113,6 +122,12 @@ public class IdentityService : IIdentityService
         try
         {
             var customer = await _customersRepository.GetAsync(new ObjectId(customerId));
+            if (customer == null)
+            {
+                _logger.LogWarning("Customer with {Id} does not exist", customerId);
+                return OperationStatusModel.Fail($"Customer with {customerId} does not exist");
+            }
+            
             customer.Passport = customerPassport.Adapt<CustomerPassport>();
 
             await _customersRepository.UpdateAsync(customer);
