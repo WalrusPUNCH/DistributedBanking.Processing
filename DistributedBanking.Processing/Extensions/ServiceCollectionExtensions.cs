@@ -104,7 +104,7 @@ public static class ServiceCollectionExtensions
 
         TypeAdapterConfig<string, ObjectId>.NewConfig()
             .MapWith(value => new ObjectId(value));
-        
+
         return services;
     }
     
