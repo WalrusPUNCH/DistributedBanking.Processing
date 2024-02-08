@@ -17,7 +17,7 @@ public class RolesRepository : RepositoryBase<ApplicationRole>, IRolesRepository
         : base(
             transactionalClockClient, 
             mongoDbFactory.GetDatabase(), 
-            CollectionNames.Accounts)
+            CollectionNames.Service.Roles)
     {
         _database = mongoDbFactory.GetDatabase();
     }

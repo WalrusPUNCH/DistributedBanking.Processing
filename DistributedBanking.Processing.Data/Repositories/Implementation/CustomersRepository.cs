@@ -17,7 +17,7 @@ public class CustomersRepository : RepositoryBase<CustomerEntity>, ICustomersRep
         : base(
             transactionalClockClient, 
             mongoDbFactory.GetDatabase(), 
-            CollectionNames.Accounts)
+            CollectionNames.EndUsers)
     {
         _database = mongoDbFactory.GetDatabase();
     }

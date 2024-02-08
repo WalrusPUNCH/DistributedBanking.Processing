@@ -17,7 +17,7 @@ public class TransactionsRepository : RepositoryBase<TransactionEntity>, ITransa
         : base(
             transactionalClockClient, 
             mongoDbFactory.GetDatabase(), 
-            CollectionNames.Accounts)
+            CollectionNames.Transactions)
     {
         _database = mongoDbFactory.GetDatabase();
     }

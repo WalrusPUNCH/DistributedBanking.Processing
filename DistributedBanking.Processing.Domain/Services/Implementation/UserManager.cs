@@ -51,14 +51,13 @@ public class UserManager : IUserManager
                 return IdentityOperationResult.Failed("User with the same email already exists");
             }
             
-            var passwordHash = _passwordService.HashPassword(registrationModel.Password, out var salt);
             var user = new ApplicationUser
             {
                 Email = registrationModel.Email,
                 NormalizedEmail = registrationModel.Email.NormalizeString(),
                 PhoneNumber = registrationModel.PhoneNumber,
-                PasswordHash = passwordHash,
-                PasswordSalt = salt,
+                PasswordHash = registrationModel.PasswordHash,
+                PasswordSalt = registrationModel.Salt,
                 CreatedOn = DateTime.UtcNow,
                 Roles = roleIds,
                 EndUserId = endUserId
