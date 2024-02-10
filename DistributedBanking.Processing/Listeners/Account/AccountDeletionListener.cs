@@ -29,14 +29,9 @@ public class AccountDeletionListener : BaseListener<string, AccountDeletionMessa
     }
 
     protected override async Task<ListenerResponse<OperationStatusModel>> ProcessMessage(
-        MessageWrapper<AccountDeletionMessage> messageWrapper, 
-        CancellationToken token)
+        MessageWrapper<AccountDeletionMessage> messageWrapper)
     {
-        token.Register(() => Logger.LogInformation("Account deletion operation for account '{AccountId}' has been canceled",
-            messageWrapper.Message.AccountId));
-
-        var deletionResult = await _accountService.DeleteAsync(messageWrapper.Message.AccountId/*, token*/);
-        
+        var deletionResult = await _accountService.DeleteAsync(messageWrapper.Message.AccountId);
         return new ListenerResponse<OperationStatusModel>(messageWrapper.Offset, deletionResult);
     }
 
