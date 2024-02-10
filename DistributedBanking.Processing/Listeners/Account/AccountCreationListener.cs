@@ -4,9 +4,8 @@ using DistributedBanking.Processing.Domain.Services;
 using DistributedBanking.Processing.Models;
 using Mapster;
 using Shared.Kafka.Messages;
-using Shared.Kafka.Messages.Account;
 using Shared.Kafka.Services;
-using Shared.Redis.Models;
+using Shared.Messaging.Messages.Account;
 using Shared.Redis.Services;
 
 namespace DistributedBanking.Processing.Listeners.Account;
@@ -36,7 +35,10 @@ public class AccountCreationListener : BaseListener<string, AccountCreationMessa
         var accountCreationModel = messageWrapper.Adapt<AccountCreationModel>();
         var accountCreationResult = await _accountService.CreateAsync(messageWrapper.Message.CustomerId, accountCreationModel);
 
-        return new ListenerResponse<OperationStatusModel<AccountOwnedResponseModel>>(messageWrapper.Offset, accountCreationResult);
+        return new ListenerResponse<OperationStatusModel<AccountOwnedResponseModel>>(
+            MessageOffset: messageWrapper.Offset, 
+            Response: accountCreationResult, 
+            ResponseChannelPattern: messageWrapper.Message.ResponseChannelPattern);
     }
 
     protected override void OnMessageProcessingException(
@@ -46,10 +48,5 @@ public class AccountCreationListener : BaseListener<string, AccountCreationMessa
     {
         Logger.LogError(exception, "Error while trying to create account for customer wit an ID '{CustomerId}'. Retry in {Delay}",
             messageWrapper.Message.CustomerId, delay);
-    }
-
-    protected override string RedisChannelBaseForResponse()
-    {
-        return RedisChannelConstants.AccountCreationChannel;
     }
 }

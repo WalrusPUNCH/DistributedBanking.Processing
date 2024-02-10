@@ -22,6 +22,7 @@
     <ProjectReference Include="..\DistributedBanking.Processing.Domain\DistributedBanking.Processing.Domain.csproj" />
     <ProjectReference Include="..\DistributedBanking.Shared\Shared.Data\Shared.Data.csproj" />
     <ProjectReference Include="..\DistributedBanking.Shared\Shared.Kafka\Shared.Kafka.csproj" />
+    <ProjectReference Include="..\DistributedBanking.Shared\Shared.Messaging\Shared.Messaging.csproj" />
     <ProjectReference Include="..\DistributedBanking.Shared\Shared.Redis\Shared.Redis.csproj" />
     <ProjectReference Include="..\TransactionalClock.Integration\TransactionalClock.Integration.csproj" />
   </ItemGroup>
