@@ -4,9 +4,8 @@ using DistributedBanking.Processing.Domain.Services;
 using DistributedBanking.Processing.Models;
 using Mapster;
 using Shared.Kafka.Messages;
-using Shared.Kafka.Messages.Identity;
 using Shared.Kafka.Services;
-using Shared.Redis.Models;
+using Shared.Messaging.Messages.Identity;
 using Shared.Redis.Services;
 
 namespace DistributedBanking.Processing.Listeners.Identity;
@@ -36,7 +35,10 @@ public class CustomerInformationUpdateListener : BaseListener<string, CustomerIn
         var updatedInformationModel = messageWrapper.Adapt<CustomerPassportModel>();
         var updateResult =  await _identityService.UpdateCustomerPersonalInformation(messageWrapper.Message.CustomerId, updatedInformationModel);
 
-        return new ListenerResponse<OperationStatusModel>(messageWrapper.Offset, updateResult);
+        return new ListenerResponse<OperationStatusModel>(
+            MessageOffset: messageWrapper.Offset,
+            Response: updateResult,
+            ResponseChannelPattern: messageWrapper.Message.ResponseChannelPattern);
     }
 
     protected override void OnMessageProcessingException(
@@ -47,10 +49,5 @@ public class CustomerInformationUpdateListener : BaseListener<string, CustomerIn
         Logger.LogError(exception, 
             "Error while trying to update customer information for customer '{CustomerId}'. Retry in {Delay}", 
             messageWrapper.Message.CustomerId, delay);
-    }
-    
-    protected override string RedisChannelBaseForResponse()
-    {
-        return RedisChannelConstants.CustomersUpdateChannel;
     }
 }

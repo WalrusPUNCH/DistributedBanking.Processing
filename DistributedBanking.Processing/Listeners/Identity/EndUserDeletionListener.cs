@@ -2,9 +2,8 @@ using Contracts;
 using DistributedBanking.Processing.Domain.Services;
 using DistributedBanking.Processing.Models;
 using Shared.Kafka.Messages;
-using Shared.Kafka.Messages.Identity;
 using Shared.Kafka.Services;
-using Shared.Redis.Models;
+using Shared.Messaging.Messages.Identity;
 using Shared.Redis.Services;
 
 namespace DistributedBanking.Processing.Listeners.Identity;
@@ -33,7 +32,10 @@ public class EndUserDeletionListener : BaseListener<string, EndUserDeletionMessa
     {
         var deletionResult = await _identityService.DeleteUser(messageWrapper.Message.EndUserId); //todo inconsistency in email and ids
 
-        return new ListenerResponse<OperationStatusModel>(messageWrapper.Offset, deletionResult);
+        return new ListenerResponse<OperationStatusModel>(
+            MessageOffset: messageWrapper.Offset,
+            Response: deletionResult,
+            ResponseChannelPattern: messageWrapper.Message.ResponseChannelPattern);
     }
 
     protected override void OnMessageProcessingException(
@@ -43,10 +45,5 @@ public class EndUserDeletionListener : BaseListener<string, EndUserDeletionMessa
     {
         Logger.LogError(exception, "Error while trying to delete end user with an ID '{EndUserId}'. Retry in {Delay}",
             messageWrapper.Message.EndUserId, delay);
-    }
-    
-    protected override string RedisChannelBaseForResponse()
-    {
-        return RedisChannelConstants.UsersDeletionChannel;
     }
 }

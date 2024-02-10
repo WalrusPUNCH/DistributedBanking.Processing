@@ -1,13 +1,14 @@
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
 using DistributedBanking.Processing.Models;
 using Shared.Kafka.Messages;
 using Shared.Kafka.Services;
+using Shared.Messaging.Messages;
 using Shared.Redis.Services;
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
 
 namespace DistributedBanking.Processing.Listeners;
 
-public abstract class BaseListener<TMessageKey, TMessageValue, TResponse> : BackgroundService
+public abstract class BaseListener<TMessageKey, TMessageValue, TResponse> : BackgroundService where TMessageValue : MessageBase
 {
     private const int MaxDelaySeconds = 60;
     private readonly IKafkaConsumerService<TMessageKey, TMessageValue> _consumer;
@@ -29,7 +30,7 @@ public abstract class BaseListener<TMessageKey, TMessageValue, TResponse> : Back
 
     protected virtual bool FilterMessage(MessageWrapper<TMessageValue> message)
     {
-        return message.Message != null;
+        return true;
     }
     
     protected abstract Task<ListenerResponse<TResponse>> ProcessMessage(MessageWrapper<TMessageValue> message);
@@ -39,14 +40,12 @@ public abstract class BaseListener<TMessageKey, TMessageValue, TResponse> : Back
         Logger.LogError(exception, "Error while trying to process '{MessageType}' message. Retry in {Delay}",
             typeof(TMessageValue).Name, delay);
     }
-
-    protected abstract string RedisChannelBaseForResponse();
     
     protected virtual async Task OnMessageResponse(ListenerResponse<TResponse> listenerResponse)
     {
-        var redisChannel = $"{RedisChannelBaseForResponse()}:{listenerResponse.MessageOffset.Partition}:{listenerResponse.MessageOffset.Offset}";
-        await _redisProvider.SetAsync(redisChannel, listenerResponse.Response, TimeSpan.FromMinutes(5)); // todo this is temp
-        await _redisSubscriber.PubAsync(redisChannel, listenerResponse.Response);
+        var responseChannel = listenerResponse.ResponseChannel;
+        await _redisProvider.SetAsync(responseChannel, listenerResponse.Response, TimeSpan.FromMinutes(5)); // todo this is temp
+        await _redisSubscriber.PubAsync(responseChannel, listenerResponse.Response);
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)

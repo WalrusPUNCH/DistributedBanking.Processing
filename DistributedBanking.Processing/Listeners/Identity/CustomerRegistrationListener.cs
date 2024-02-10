@@ -4,9 +4,8 @@ using DistributedBanking.Processing.Models;
 using Mapster;
 using Shared.Data.Entities.Constants;
 using Shared.Kafka.Messages;
-using Shared.Kafka.Messages.Identity.Registration;
 using Shared.Kafka.Services;
-using Shared.Redis.Models;
+using Shared.Messaging.Messages.Identity.Registration;
 using Shared.Redis.Services;
 
 namespace DistributedBanking.Processing.Listeners.Identity;
@@ -36,7 +35,10 @@ public class CustomerRegistrationListener : BaseListener<string, UserRegistratio
         var registrationModel = messageWrapper.Adapt<EndUserRegistrationModel>();
         var registrationResult = await _identityService.RegisterUser(registrationModel, RoleNames.Customer);
 
-        return new ListenerResponse<IdentityOperationResult>(messageWrapper.Offset, registrationResult);
+        return new ListenerResponse<IdentityOperationResult>(
+            MessageOffset: messageWrapper.Offset, 
+            Response: registrationResult,
+            ResponseChannelPattern: messageWrapper.Message.ResponseChannelPattern);
     }
 
     protected override void OnMessageProcessingException(
@@ -46,10 +48,5 @@ public class CustomerRegistrationListener : BaseListener<string, UserRegistratio
     {
         Logger.LogError(exception, "Error while trying to register customer with an email '{Email}'. Retry in {Delay}",
             messageWrapper.Message.Email, delay);
-    }
-    
-    protected override string RedisChannelBaseForResponse()
-    {
-        return RedisChannelConstants.CustomersRegistrationChannel;
     }
 }
