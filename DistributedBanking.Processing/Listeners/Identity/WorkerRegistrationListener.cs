@@ -30,13 +30,10 @@ public class WorkerRegistrationListener : BaseListener<string, WorkerRegistratio
     }
 
     protected override async Task<ListenerResponse<IdentityOperationResult>> ProcessMessage(
-        MessageWrapper<WorkerRegistrationMessage> messageWrapper,
-        CancellationToken token)
+        MessageWrapper<WorkerRegistrationMessage> messageWrapper)
     {
-        token.Register(() => Logger.LogInformation("Worker registration operation for email '{Email}' has been canceled", messageWrapper.Message.Email));
-
-        var registrationModel = messageWrapper.Adapt<EndUserRegistrationModel>();
-        var registrationResult = await _identityService.RegisterUser(registrationModel, messageWrapper.Message.Role/*, token*/);
+        var registrationModel = messageWrapper.Message.Adapt<EndUserRegistrationModel>();
+        var registrationResult = await _identityService.RegisterUser(registrationModel, messageWrapper.Message.Role);
 
         return new ListenerResponse<IdentityOperationResult>(messageWrapper.Offset, registrationResult);
     }

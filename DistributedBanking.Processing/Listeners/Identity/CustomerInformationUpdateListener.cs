@@ -31,15 +31,10 @@ public class CustomerInformationUpdateListener : BaseListener<string, CustomerIn
     }
 
     protected override async Task<ListenerResponse<OperationStatusModel>> ProcessMessage(
-        MessageWrapper<CustomerInformationUpdateMessage> messageWrapper, 
-        CancellationToken token)
+        MessageWrapper<CustomerInformationUpdateMessage> messageWrapper)
     {
-        token.Register(() => Logger.LogInformation(
-            "Customer information update operation for customer '{CustomerId}' has been canceled", 
-            messageWrapper.Message.CustomerId));
-
         var updatedInformationModel = messageWrapper.Adapt<CustomerPassportModel>();
-        var updateResult =  await _identityService.UpdateCustomerPersonalInformation(messageWrapper.Message.CustomerId, updatedInformationModel/*, token*/);
+        var updateResult =  await _identityService.UpdateCustomerPersonalInformation(messageWrapper.Message.CustomerId, updatedInformationModel);
 
         return new ListenerResponse<OperationStatusModel>(messageWrapper.Offset, updateResult);
     }

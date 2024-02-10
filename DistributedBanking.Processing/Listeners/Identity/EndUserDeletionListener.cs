@@ -29,13 +29,9 @@ public class EndUserDeletionListener : BaseListener<string, EndUserDeletionMessa
     }
 
     protected override async Task<ListenerResponse<OperationStatusModel>> ProcessMessage(
-        MessageWrapper<EndUserDeletionMessage> messageWrapper,
-        CancellationToken token)
+        MessageWrapper<EndUserDeletionMessage> messageWrapper)
     {
-        token.Register(() => Logger.LogInformation("End user '{EndUserId}' deletion operation has been canceled",
-            messageWrapper.Message.EndUserId));
-
-        var deletionResult = await _identityService.DeleteUser(messageWrapper.Message.EndUserId/*, token*/); //todo inconsistency in email and ids
+        var deletionResult = await _identityService.DeleteUser(messageWrapper.Message.EndUserId); //todo inconsistency in email and ids
 
         return new ListenerResponse<OperationStatusModel>(messageWrapper.Offset, deletionResult);
     }

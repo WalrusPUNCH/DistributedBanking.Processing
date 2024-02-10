@@ -31,13 +31,10 @@ public class CustomerRegistrationListener : BaseListener<string, UserRegistratio
     }
 
     protected override async Task<ListenerResponse<IdentityOperationResult>> ProcessMessage(
-        MessageWrapper<UserRegistrationMessage> messageWrapper,
-        CancellationToken token)
+        MessageWrapper<UserRegistrationMessage> messageWrapper)
     {
-        token.Register(() => Logger.LogInformation("Customer registration operation has been canceled"));
-
         var registrationModel = messageWrapper.Adapt<EndUserRegistrationModel>();
-        var registrationResult = await _identityService.RegisterUser(registrationModel, RoleNames.Customer/*, token*/);
+        var registrationResult = await _identityService.RegisterUser(registrationModel, RoleNames.Customer);
 
         return new ListenerResponse<IdentityOperationResult>(messageWrapper.Offset, registrationResult);
     }

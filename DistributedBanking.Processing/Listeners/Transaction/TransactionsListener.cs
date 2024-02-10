@@ -34,33 +34,28 @@ public class TransactionsListener : BaseListener<string, TransactionMessage, Ope
     }
 
     protected override async Task<ListenerResponse<OperationStatusModel>> ProcessMessage(
-        MessageWrapper<TransactionMessage> messageWrapper,
-        CancellationToken token)
+        MessageWrapper<TransactionMessage> messageWrapper)
     {
-        token.Register(() => Logger.LogInformation("Transaction operation for source account: {SourceAccountId}, " +
-                                                   "destination account: {DestinationAccountId} has been canceled", 
-            messageWrapper.Message.SourceAccountId, messageWrapper.Message.DestinationAccountId));
-
         switch (messageWrapper.Message.Type)
         {
             case TransactionType.Deposit:
             {
                 var transactionModel = messageWrapper.Adapt<OneWayTransactionModel>();
-                var depositResult = await _transactionService.Deposit(transactionModel /*, token*/);
+                var depositResult = await _transactionService.Deposit(transactionModel);
 
                 return new ListenerResponse<OperationStatusModel>(messageWrapper.Offset, depositResult);
             }
             case TransactionType.Withdrawal:
             {
                 var transactionModel = messageWrapper.Adapt<OneWaySecuredTransactionModel>();
-                var withdrawalResult = await _transactionService.Withdraw(transactionModel /*, token*/);
+                var withdrawalResult = await _transactionService.Withdraw(transactionModel);
 
                 return new ListenerResponse<OperationStatusModel>(messageWrapper.Offset, withdrawalResult);
             }
             case TransactionType.Transfer:
             {
                 var transactionModel = messageWrapper.Adapt<TwoWayTransactionModel>();
-                var transferResult = await _transactionService.Transfer(transactionModel /*, token*/);
+                var transferResult = await _transactionService.Transfer(transactionModel);
 
                 return new ListenerResponse<OperationStatusModel>(messageWrapper.Offset, transferResult);
             }

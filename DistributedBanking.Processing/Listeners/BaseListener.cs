@@ -32,7 +32,7 @@ public abstract class BaseListener<TMessageKey, TMessageValue, TResponse> : Back
         return message.Message != null;
     }
     
-    protected abstract Task<ListenerResponse<TResponse>> ProcessMessage(MessageWrapper<TMessageValue> message, CancellationToken token);
+    protected abstract Task<ListenerResponse<TResponse>> ProcessMessage(MessageWrapper<TMessageValue> message);
 
     protected virtual void OnMessageProcessingException(Exception exception, TimeSpan delay, MessageWrapper<TMessageValue> message)
     {
@@ -48,7 +48,7 @@ public abstract class BaseListener<TMessageKey, TMessageValue, TResponse> : Back
         await _redisProvider.SetAsync(redisChannel, listenerResponse.Response, TimeSpan.FromMinutes(5)); // todo this is temp
         await _redisSubscriber.PubAsync(redisChannel, listenerResponse.Response);
     }
-    
+
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         stoppingToken.Register(() =>
@@ -60,14 +60,17 @@ public abstract class BaseListener<TMessageKey, TMessageValue, TResponse> : Back
             .Consume(stoppingToken)
             .Do(_ => Logger.LogInformation("Listener {Listener} has received a message", this.GetType().Name))
             .Where(FilterMessage)
-            .Select(message 
-                => Observable.FromAsync(token => ProcessMessage(message, token))
-                    .RetryWhen(errors => errors.SelectMany((exception, retry) =>
-                    {
-                        var delay = TimeSpan.FromSeconds(Math.Max(MaxDelaySeconds, retry * 2));
-                        OnMessageProcessingException(exception, delay, message);
-                        return Observable.Timer(delay); 
-                    }))
+            .Select(message => Observable.FromAsync(async () =>
+                {
+                    var listenerResponse = await ProcessMessage(message);
+                    await OnMessageResponse(listenerResponse);
+                })
+                .RetryWhen(errors => errors.SelectMany((exception, retry) => 
+                {
+                    var delay = TimeSpan.FromSeconds(Math.Max(MaxDelaySeconds, retry * 2));
+                    OnMessageProcessingException(exception, delay, message);
+                    return Observable.Timer(delay); 
+                }))
             )
             .Merge() //todo consider
             .RetryWhen(errors => errors.SelectMany((exception, retry) => 
@@ -78,13 +81,9 @@ public abstract class BaseListener<TMessageKey, TMessageValue, TResponse> : Back
                 
                 return Observable.Timer(delay);
             }))
-            .Select(listenerResponse => Observable.FromAsync(async () =>
-            {
-                await OnMessageResponse(listenerResponse);
-            }))
             .SubscribeOn(TaskPoolScheduler.Default)
             .Subscribe(
-                onNext: _ => { },
+                onNext: _ => { Logger.LogInformation("{Listener} has processed a message", this.GetType().Name);  },
                 onError: exception => 
                 { 
                     Logger.LogError(exception, "An unexpected error occurred while listening to '{MessageType}' messages", typeof(TMessageValue).Name);

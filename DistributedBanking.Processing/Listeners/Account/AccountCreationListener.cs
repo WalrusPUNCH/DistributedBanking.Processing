@@ -31,14 +31,10 @@ public class AccountCreationListener : BaseListener<string, AccountCreationMessa
     }
     
     protected override async Task<ListenerResponse<OperationStatusModel<AccountOwnedResponseModel>>> ProcessMessage(
-        MessageWrapper<AccountCreationMessage> messageWrapper, 
-        CancellationToken token)
+        MessageWrapper<AccountCreationMessage> messageWrapper)
     {
-        token.Register(() => Logger.LogInformation("Account creation operation for customer '{CustomerId}' has been canceled", 
-            messageWrapper.Message.CustomerId));
-
         var accountCreationModel = messageWrapper.Adapt<AccountCreationModel>();
-        var accountCreationResult = await _accountService.CreateAsync(messageWrapper.Message.CustomerId, accountCreationModel/*, token*/);
+        var accountCreationResult = await _accountService.CreateAsync(messageWrapper.Message.CustomerId, accountCreationModel);
 
         return new ListenerResponse<OperationStatusModel<AccountOwnedResponseModel>>(messageWrapper.Offset, accountCreationResult);
     }
