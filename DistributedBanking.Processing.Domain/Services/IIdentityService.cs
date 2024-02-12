@@ -1,5 +1,6 @@
-﻿using Contracts;
+﻿using Contracts.Models;
 using DistributedBanking.Processing.Domain.Models.Identity;
+using IdentityOperationResult = DistributedBanking.Processing.Domain.Models.Identity.IdentityOperationResult;
 
 namespace DistributedBanking.Processing.Domain.Services;
 

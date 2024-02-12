@@ -1,4 +1,4 @@
-﻿using Contracts;
+﻿using Contracts.Models;
 using DistributedBanking.Processing.Data.Repositories;
 using DistributedBanking.Processing.Domain.Models.Identity;
 using Mapster;
@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using Shared.Data.Entities.Constants;
 using Shared.Data.Entities.EndUsers;
+using IdentityOperationResult = DistributedBanking.Processing.Domain.Models.Identity.IdentityOperationResult;
 
 namespace DistributedBanking.Processing.Domain.Services.Implementation;
 

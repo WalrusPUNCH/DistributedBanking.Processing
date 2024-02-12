@@ -1,4 +1,4 @@
-﻿using Contracts;
+﻿using Contracts.Models;
 using DistributedBanking.Processing.Data.Repositories;
 using DistributedBanking.Processing.Domain.Mapping;
 using DistributedBanking.Processing.Domain.Models.Transaction;
