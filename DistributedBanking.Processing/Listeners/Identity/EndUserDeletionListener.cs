@@ -1,4 +1,4 @@
-using Contracts;
+using Contracts.Models;
 using DistributedBanking.Processing.Domain.Services;
 using DistributedBanking.Processing.Models;
 using Shared.Kafka.Messages;

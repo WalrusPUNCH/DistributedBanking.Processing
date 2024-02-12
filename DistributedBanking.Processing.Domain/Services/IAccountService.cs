@@ -1,4 +1,4 @@
-﻿using Contracts;
+﻿using Contracts.Models;
 using DistributedBanking.Processing.Domain.Models.Account;
 using Shared.Data.Entities;
 
@@ -8,9 +8,9 @@ public interface IAccountService
 {
     Task<OperationStatusModel<AccountOwnedResponseModel>> CreateAsync(string customerId, AccountCreationModel accountModel);
     Task<AccountOwnedResponseModel> GetAsync(string id);
+    Task<IEnumerable<AccountOwnedResponseModel>> GetAsync();
     Task<IEnumerable<AccountResponseModel>> GetCustomerAccountsAsync(string customerId);
     Task<bool> BelongsTo(string accountId, string customerId);
-    Task<IEnumerable<AccountOwnedResponseModel>> GetAsync();
     Task UpdateAsync(AccountEntity model);
     Task<OperationStatusModel> DeleteAsync(string id);
 }

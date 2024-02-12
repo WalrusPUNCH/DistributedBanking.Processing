@@ -1,4 +1,4 @@
-using Contracts;
+using Contracts.Models;
 using DistributedBanking.Processing.Domain.Models.Identity;
 using DistributedBanking.Processing.Domain.Services;
 using DistributedBanking.Processing.Models;
