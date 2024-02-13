@@ -10,7 +10,7 @@ using Shared.Redis.Services;
 
 namespace DistributedBanking.Processing.Listeners.Account;
 
-public class AccountCreationListener : BaseListener<string, AccountCreationMessage, OperationStatusModel<AccountOwnedResponseModel>>
+public class AccountCreationListener : BaseListener<string, AccountCreationMessage, OperationResult<AccountOwnedResponseModel>>
 {
     private readonly IAccountService _accountService;
 
@@ -29,13 +29,13 @@ public class AccountCreationListener : BaseListener<string, AccountCreationMessa
         return base.FilterMessage(messageWrapper) && !string.IsNullOrWhiteSpace(messageWrapper.Message.CustomerId);
     }
     
-    protected override async Task<ListenerResponse<OperationStatusModel<AccountOwnedResponseModel>>> ProcessMessage(
+    protected override async Task<ListenerResponse<OperationResult<AccountOwnedResponseModel>>> ProcessMessage(
         MessageWrapper<AccountCreationMessage> messageWrapper)
     {
         var accountCreationModel = messageWrapper.Adapt<AccountCreationModel>();
         var accountCreationResult = await _accountService.CreateAsync(messageWrapper.Message.CustomerId, accountCreationModel);
 
-        return new ListenerResponse<OperationStatusModel<AccountOwnedResponseModel>>(
+        return new ListenerResponse<OperationResult<AccountOwnedResponseModel>>(
             MessageOffset: messageWrapper.Offset, 
             Response: accountCreationResult, 
             ResponseChannelPattern: messageWrapper.Message.ResponseChannelPattern);

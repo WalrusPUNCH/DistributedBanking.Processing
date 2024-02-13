@@ -11,7 +11,7 @@ using Shared.Redis.Services;
 
 namespace DistributedBanking.Processing.Listeners.Transaction;
 
-public class TransactionsListener : BaseListener<string, TransactionMessage, OperationStatusModel>
+public class TransactionsListener : BaseListener<string, TransactionMessage, OperationResult>
 {
     private readonly ITransactionService _transactionService;
 
@@ -32,7 +32,7 @@ public class TransactionsListener : BaseListener<string, TransactionMessage, Ope
             && messageWrapper.Message.Amount != 0;
     }
 
-    protected override async Task<ListenerResponse<OperationStatusModel>> ProcessMessage(
+    protected override async Task<ListenerResponse<OperationResult>> ProcessMessage(
         MessageWrapper<TransactionMessage> messageWrapper)
     {
         switch (messageWrapper.Message.Type)
@@ -42,21 +42,21 @@ public class TransactionsListener : BaseListener<string, TransactionMessage, Ope
                 var transactionModel = messageWrapper.Adapt<OneWayTransactionModel>();
                 var depositResult = await _transactionService.Deposit(transactionModel);
 
-                return new ListenerResponse<OperationStatusModel>(messageWrapper.Offset, depositResult, messageWrapper.Message.ResponseChannelPattern);
+                return new ListenerResponse<OperationResult>(messageWrapper.Offset, depositResult, messageWrapper.Message.ResponseChannelPattern);
             }
             case TransactionType.Withdrawal:
             {
                 var transactionModel = messageWrapper.Adapt<OneWaySecuredTransactionModel>();
                 var withdrawalResult = await _transactionService.Withdraw(transactionModel);
 
-                return new ListenerResponse<OperationStatusModel>(messageWrapper.Offset, withdrawalResult, messageWrapper.Message.ResponseChannelPattern);
+                return new ListenerResponse<OperationResult>(messageWrapper.Offset, withdrawalResult, messageWrapper.Message.ResponseChannelPattern);
             }
             case TransactionType.Transfer:
             {
                 var transactionModel = messageWrapper.Adapt<TwoWayTransactionModel>();
                 var transferResult = await _transactionService.Transfer(transactionModel);
 
-                return new ListenerResponse<OperationStatusModel>(messageWrapper.Offset, transferResult, messageWrapper.Message.ResponseChannelPattern);
+                return new ListenerResponse<OperationResult>(messageWrapper.Offset, transferResult, messageWrapper.Message.ResponseChannelPattern);
             }
             default:
                 throw new ArgumentOutOfRangeException(nameof(messageWrapper.Message.Type), messageWrapper.Message.Type,

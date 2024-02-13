@@ -1,15 +1,11 @@
 ﻿using Contracts.Models;
 using DistributedBanking.Processing.Domain.Models.Identity;
-using IdentityOperationResult = DistributedBanking.Processing.Domain.Models.Identity.IdentityOperationResult;
 
 namespace DistributedBanking.Processing.Domain.Services;
 
 public interface IIdentityService
 {
-    Task<IdentityOperationResult> RegisterUser(
-        EndUserRegistrationModel registrationModel, string role);
-    
-    Task<OperationStatusModel> DeleteUser(string email);
-    
-    Task<OperationStatusModel> UpdateCustomerPersonalInformation(string customerId, CustomerPassportModel customerPassport);
+    Task<OperationResult> RegisterUser(EndUserRegistrationModel registrationModel, string role);
+    Task<OperationResult> DeleteUser(string email);
+    Task<OperationResult> UpdateCustomerPersonalInformation(string customerId, CustomerPassportModel customerPassport);
 }

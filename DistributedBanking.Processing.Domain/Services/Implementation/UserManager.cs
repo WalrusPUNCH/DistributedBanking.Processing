@@ -1,4 +1,5 @@
 ﻿using Contracts.Extensions;
+using Contracts.Models;
 using DistributedBanking.Processing.Data.Repositories;
 using DistributedBanking.Processing.Domain.Models.Identity;
 using Mapster;
@@ -27,7 +28,7 @@ public class UserManager : IUserManager
         _logger = logger;
     }
 
-    public async Task<IdentityOperationResult> CreateAsync(string endUserId, EndUserRegistrationModel registrationModel, IEnumerable<string>? roles = null)
+    public async Task<OperationResult> CreateAsync(string endUserId, EndUserRegistrationModel registrationModel, IEnumerable<string>? roles = null)
     {
         try
         {
@@ -48,7 +49,7 @@ public class UserManager : IUserManager
             var existingUser = await _usersRepository.GetByEmailAsync(registrationModel.Email);
             if (existingUser != null)
             {
-                return IdentityOperationResult.Failed("User with the same email already exists");
+                return OperationResult.BadRequest("User with the same email already exists");
             }
             
             var user = new ApplicationUser
@@ -65,12 +66,12 @@ public class UserManager : IUserManager
 
             await _usersRepository.AddAsync(user);
             
-            return IdentityOperationResult.Success;
+            return OperationResult.Success();
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "Error occurred while trying to create new user");
-            return IdentityOperationResult.Failed();
+            _logger.LogError(exception, "Exception occurred while trying to create new user");
+            return OperationResult.InternalFail("Error occurred while trying to create new user");
         }
     }
 
@@ -84,7 +85,7 @@ public class UserManager : IUserManager
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "Error occurred while trying to find user by email");
+            _logger.LogError(exception, "Exception occurred while trying to find user by email");
 
             return null;
         }
@@ -100,33 +101,31 @@ public class UserManager : IUserManager
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "Error occurred while trying to find user by email");
+            _logger.LogError(exception, "Exception occurred while trying to find user by email");
 
             return null;
         }
     }
 
-    public async Task<IdentityOperationResult> PasswordSignInAsync(string email, string password)
+    public async Task<OperationResult> PasswordSignInAsync(string email, string password)
     {
         try
         {
             var user = await _usersRepository.GetByEmailAsync(email);
             if (user == null)
             {
-                return IdentityOperationResult.Failed("User with such email doesn't exist");
+                return OperationResult.BadRequest("User with the specified email doesn't exist");
             }
-        
-        
+            
             var successfulSignIn = _passwordService.VerifyPassword(password, user.PasswordHash, user.PasswordSalt);
-
             return successfulSignIn
-                ? IdentityOperationResult.Success
-                : IdentityOperationResult.Failed("Incorrect email or password");
+                ? OperationResult.Success()
+                : OperationResult.BadRequest("Incorrect email or password");
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "Error occurred while trying to sign in user");
-            return IdentityOperationResult.Failed();
+            _logger.LogError(exception, "Exception occurred while trying to sign in user");
+            return OperationResult.InternalFail("Error occurred while trying to sign in user");
         }
     }
 
@@ -164,18 +163,18 @@ public class UserManager : IUserManager
         return roleId != null && user.Roles.Contains(roleId.Value.ToString());
     }
 
-    public async Task<IdentityOperationResult> DeleteAsync(ObjectId userId)
+    public async Task<OperationResult> DeleteAsync(ObjectId userId)
     {
         try
         {
             await _usersRepository.RemoveAsync(userId);
 
-            return IdentityOperationResult.Success;
+            return OperationResult.Success();
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "Error occurred while trying to sign in user");
-            return IdentityOperationResult.Failed();
+            _logger.LogError(exception, "Exception occurred while trying to sign in user");
+            return OperationResult.InternalFail("Error occurred while trying to sign in user");
         }
     }
 }

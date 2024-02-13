@@ -24,13 +24,13 @@ public class AccountService : IAccountService
         _logger = logger;
     }
     
-    public async Task<OperationStatusModel<AccountOwnedResponseModel>> CreateAsync(string customerId, AccountCreationModel accountCreationModel)
+    public async Task<OperationResult<AccountOwnedResponseModel>> CreateAsync(string customerId, AccountCreationModel accountCreationModel)
     {
         var customerEntity = await _customersRepository.GetAsync(new ObjectId(customerId));
         if (customerEntity == null)
         {
             _logger.LogError("Customer with the ID '{CustomerId}' does not exist", customerId);
-            return OperationStatusModel<AccountOwnedResponseModel>.Fail("Error occured while trying to create account. Try again later");
+            return OperationResult<AccountOwnedResponseModel>.BadRequest(default, "Error occured while trying to create account. Try again later");
         }
         
         var account = GenerateNewAccount(customerId, accountCreationModel);
@@ -42,7 +42,7 @@ public class AccountService : IAccountService
         
         var accountModel = accountEntity.Adapt<AccountOwnedResponseModel>();
 
-        return OperationStatusModel<AccountOwnedResponseModel>.Success(accountModel);
+        return OperationResult<AccountOwnedResponseModel>.Success(accountModel);
     }
 
     private static AccountModel GenerateNewAccount(string customerId, AccountCreationModel accountModel)
@@ -93,7 +93,7 @@ public class AccountService : IAccountService
         await _accountsRepository.UpdateAsync(model);
     }
 
-    public async Task<OperationStatusModel> DeleteAsync(string id)
+    public async Task<OperationResult> DeleteAsync(string id)
     {
         try
         {
@@ -101,7 +101,7 @@ public class AccountService : IAccountService
             if (string.IsNullOrWhiteSpace(accountEntity?.Owner))
             {
                 _logger.LogWarning("Unable to delete account '{AccountId}' because such account does not exist or already deleted", id);
-                return OperationStatusModel.Fail("Error occured while trying to delete account. Try again later");
+                return OperationResult.BadRequest("Account with the specified ID doesn't exist");
             }
         
             var customerEntity = await _customersRepository.GetAsync(new ObjectId(accountEntity.Owner));
@@ -109,7 +109,7 @@ public class AccountService : IAccountService
             {
                 _logger.LogError("Customer with the ID '{CustomerId}' connected to the account '{AccountId}' does not exist", 
                     accountEntity.Owner, id);
-                return OperationStatusModel.Fail("Error occured while trying to delete account. Try again later");
+                return OperationResult.InternalFail("Error occured while trying to delete account. Try again later");
             }
             
             customerEntity.Accounts.Remove(accountEntity.Id.ToString());
@@ -117,12 +117,12 @@ public class AccountService : IAccountService
             accountEntity.Owner = null;
             await UpdateAsync(accountEntity);
             
-            return OperationStatusModel.Success();
+            return OperationResult.Success();
         }
         catch (Exception exception)
         {
             _logger.LogError(exception, "Exception occurred while trying to delete account");
-            return OperationStatusModel.Fail("Error occurred while trying to delete account");
+            return OperationResult.InternalFail("Error occurred while trying to delete account. Try again later");
         }
     }
 }

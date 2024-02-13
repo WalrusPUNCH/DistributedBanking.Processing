@@ -8,7 +8,7 @@ using Shared.Redis.Services;
 
 namespace DistributedBanking.Processing.Listeners.Account;
 
-public class AccountDeletionListener : BaseListener<string, AccountDeletionMessage, OperationStatusModel>
+public class AccountDeletionListener : BaseListener<string, AccountDeletionMessage, OperationResult>
 {
     private readonly IAccountService _accountService;
 
@@ -27,11 +27,11 @@ public class AccountDeletionListener : BaseListener<string, AccountDeletionMessa
         return base.FilterMessage(messageWrapper) && !string.IsNullOrWhiteSpace(messageWrapper.Message.AccountId);
     }
 
-    protected override async Task<ListenerResponse<OperationStatusModel>> ProcessMessage(
+    protected override async Task<ListenerResponse<OperationResult>> ProcessMessage(
         MessageWrapper<AccountDeletionMessage> messageWrapper)
     {
         var deletionResult = await _accountService.DeleteAsync(messageWrapper.Message.AccountId);
-        return new ListenerResponse<OperationStatusModel>(
+        return new ListenerResponse<OperationResult>(
             MessageOffset: messageWrapper.Offset, 
             Response: deletionResult,
             ResponseChannelPattern: messageWrapper.Message.ResponseChannelPattern);

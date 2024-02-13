@@ -1,3 +1,4 @@
+using Contracts.Models;
 using DistributedBanking.Processing.Domain.Models.Identity;
 using DistributedBanking.Processing.Domain.Services;
 using DistributedBanking.Processing.Models;
@@ -10,7 +11,7 @@ using Shared.Redis.Services;
 
 namespace DistributedBanking.Processing.Listeners.Identity;
 
-public class CustomerRegistrationListener : BaseListener<string, UserRegistrationMessage, IdentityOperationResult>
+public class CustomerRegistrationListener : BaseListener<string, UserRegistrationMessage, OperationResult>
 {
     private readonly IIdentityService _identityService;
 
@@ -29,13 +30,13 @@ public class CustomerRegistrationListener : BaseListener<string, UserRegistratio
         return base.FilterMessage(messageWrapper) && !string.IsNullOrWhiteSpace(messageWrapper.Message.Email);
     }
 
-    protected override async Task<ListenerResponse<IdentityOperationResult>> ProcessMessage(
+    protected override async Task<ListenerResponse<OperationResult>> ProcessMessage(
         MessageWrapper<UserRegistrationMessage> messageWrapper)
     {
         var registrationModel = messageWrapper.Adapt<EndUserRegistrationModel>();
         var registrationResult = await _identityService.RegisterUser(registrationModel, RoleNames.Customer);
 
-        return new ListenerResponse<IdentityOperationResult>(
+        return new ListenerResponse<OperationResult>(
             MessageOffset: messageWrapper.Offset, 
             Response: registrationResult,
             ResponseChannelPattern: messageWrapper.Message.ResponseChannelPattern);
