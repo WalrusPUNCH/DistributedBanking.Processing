@@ -54,6 +54,7 @@ public static class ServiceCollectionExtensions
         services.AddTransactionalClockIntegration(configuration);
         
         services
+            .AddTransient<IRolesManager, RolesManager>()
             .AddTransient<IUserManager, UserManager>()
             .AddTransient<IAccountService, AccountService>()
             .AddTransient<IPasswordHashingService, PasswordHashingService>()
@@ -61,7 +62,6 @@ public static class ServiceCollectionExtensions
             .AddTransient<ITransactionService, TransactionService>();
         
         services.AddRedis(configuration);
-
         services.AddKafkaConsumers(configuration);
         
         return services;
@@ -69,6 +69,7 @@ public static class ServiceCollectionExtensions
     
     private static IServiceCollection AddKafkaConsumers(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddKafkaConsumer<string, RoleCreationMessage>(configuration, KafkaTopicSource.RoleCreation);
         services.AddKafkaConsumer<string, UserRegistrationMessage>(configuration, KafkaTopicSource.CustomersRegistration);
         services.AddKafkaConsumer<string, WorkerRegistrationMessage>(configuration, KafkaTopicSource.WorkersRegistration);
         services.AddKafkaConsumer<string, CustomerInformationUpdateMessage>(configuration, KafkaTopicSource.CustomersUpdate);
@@ -83,6 +84,7 @@ public static class ServiceCollectionExtensions
     internal static IServiceCollection AddBackgroundListeners(this IServiceCollection services)
     {
         services
+            .AddHostedService<RoleCreationListener>()
             .AddHostedService<AccountCreationListener>()
             .AddHostedService<AccountDeletionListener>()
             .AddHostedService<CustomerInformationUpdateListener>()
