@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using Shared.Data.Entities.Constants;
 using Shared.Data.Entities.EndUsers;
-using IdentityOperationResult = DistributedBanking.Processing.Domain.Models.Identity.IdentityOperationResult;
 
 namespace DistributedBanking.Processing.Domain.Services.Implementation;
 
@@ -32,18 +31,18 @@ public class IdentityService : IIdentityService
         _logger = logger;
     }
     
-    public async Task<IdentityOperationResult> RegisterUser(
+    public async Task<OperationResult> RegisterUser(
         EndUserRegistrationModel registrationModel, string role)
     {
         return await RegisterUserInternal(registrationModel, role);
     }
     
-    private async Task<IdentityOperationResult> RegisterUserInternal(EndUserRegistrationModel registrationModel, string role, CancellationToken cancellationToken = default)
+    private async Task<OperationResult> RegisterUserInternal(EndUserRegistrationModel registrationModel, string role)
     {
         var existingUser = await _usersManager.GetByEmailAsync(registrationModel.Email);
         if (existingUser != null)
         {
-            return IdentityOperationResult.Failed("User with the same email already exists");
+            return OperationResult.BadRequest("User with the same email already exists");
         }
         
         ObjectId endUserId;
@@ -74,7 +73,7 @@ public class IdentityService : IIdentityService
         }
         
         var userCreationResult = await _usersManager.CreateAsync(endUserId.ToString()!, registrationModel, new []{ role });
-        if (!userCreationResult.Succeeded)
+        if (userCreationResult.Status != OperationStatus.Success)
         {
             return userCreationResult;
         }
@@ -85,12 +84,12 @@ public class IdentityService : IIdentityService
         return userCreationResult;
     }
     
-    public async Task<OperationStatusModel> DeleteUser(string id)
+    public async Task<OperationResult> DeleteUser(string id)
     {
         var appUser = await _usersManager.GetByIdAsync(id); // todo fix inconsistency in Ids and emails between here and client
         if (appUser == null)
         {
-            return OperationStatusModel.Fail("Specified user does not exist");
+            return OperationResult.BadRequest("Specified user does not exist");
         }
 
         if (await _usersManager.IsInRoleAsync(appUser.Id, RoleNames.Customer))
@@ -99,7 +98,7 @@ public class IdentityService : IIdentityService
             if (customer == null)
             {
                 _logger.LogError("Customer with the ID specified in end user does not exist");
-                return OperationStatusModel.Fail("Error occured while trying to delete user. Try again later");
+                return OperationResult.InternalFail("Error occured while trying to delete user. Try again later");
             }
             foreach (var customerAccountId in customer.Accounts)
             {
@@ -115,25 +114,24 @@ public class IdentityService : IIdentityService
             
         await _usersManager.DeleteAsync(appUser.Id);
         
-        return OperationStatusModel.Success();
+        return OperationResult.Success();
     }
 
-    public async Task<OperationStatusModel> UpdateCustomerPersonalInformation(string customerId, CustomerPassportModel customerPassport)
+    public async Task<OperationResult> UpdateCustomerPersonalInformation(string customerId, CustomerPassportModel customerPassport)
     {
         try
         {
             var customer = await _customersRepository.GetAsync(new ObjectId(customerId));
             if (customer == null)
             {
-                _logger.LogWarning("Customer with {Id} does not exist", customerId);
-                return OperationStatusModel.Fail($"Customer with {customerId} does not exist");
+                _logger.LogWarning("Customer with id {Id} does not exist", customerId);
+                return OperationResult.BadRequest("Customer with the specified ID does not exist");
             }
-            
-            customer.Passport = customerPassport.Adapt<CustomerPassport>();
 
+            customer.Passport = customerPassport.Adapt<CustomerPassport>();
             await _customersRepository.UpdateAsync(customer);
             
-            return OperationStatusModel.Success();
+            return OperationResult.Success();
         }
         catch (Exception exception)
         {

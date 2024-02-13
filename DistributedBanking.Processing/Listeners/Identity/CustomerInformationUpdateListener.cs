@@ -10,7 +10,7 @@ using Shared.Redis.Services;
 
 namespace DistributedBanking.Processing.Listeners.Identity;
 
-public class CustomerInformationUpdateListener : BaseListener<string, CustomerInformationUpdateMessage, OperationStatusModel>
+public class CustomerInformationUpdateListener : BaseListener<string, CustomerInformationUpdateMessage, OperationResult>
 {
     private readonly IIdentityService _identityService;
 
@@ -29,13 +29,13 @@ public class CustomerInformationUpdateListener : BaseListener<string, CustomerIn
         return base.FilterMessage(messageWrapper) && !string.IsNullOrWhiteSpace(messageWrapper.Message.CustomerId);
     }
 
-    protected override async Task<ListenerResponse<OperationStatusModel>> ProcessMessage(
+    protected override async Task<ListenerResponse<OperationResult>> ProcessMessage(
         MessageWrapper<CustomerInformationUpdateMessage> messageWrapper)
     {
         var updatedInformationModel = messageWrapper.Adapt<CustomerPassportModel>();
         var updateResult =  await _identityService.UpdateCustomerPersonalInformation(messageWrapper.Message.CustomerId, updatedInformationModel);
 
-        return new ListenerResponse<OperationStatusModel>(
+        return new ListenerResponse<OperationResult>(
             MessageOffset: messageWrapper.Offset,
             Response: updateResult,
             ResponseChannelPattern: messageWrapper.Message.ResponseChannelPattern);

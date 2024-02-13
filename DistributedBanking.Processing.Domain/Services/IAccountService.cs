@@ -6,11 +6,11 @@ namespace DistributedBanking.Processing.Domain.Services;
 
 public interface IAccountService
 {
-    Task<OperationStatusModel<AccountOwnedResponseModel>> CreateAsync(string customerId, AccountCreationModel accountModel);
+    Task<OperationResult<AccountOwnedResponseModel>> CreateAsync(string customerId, AccountCreationModel accountModel);
     Task<AccountOwnedResponseModel> GetAsync(string id);
     Task<IEnumerable<AccountOwnedResponseModel>> GetAsync();
     Task<IEnumerable<AccountResponseModel>> GetCustomerAccountsAsync(string customerId);
     Task<bool> BelongsTo(string accountId, string customerId);
     Task UpdateAsync(AccountEntity model);
-    Task<OperationStatusModel> DeleteAsync(string id);
+    Task<OperationResult> DeleteAsync(string id);
 }

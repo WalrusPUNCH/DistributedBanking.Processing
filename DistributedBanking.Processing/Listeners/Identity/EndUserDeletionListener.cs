@@ -8,7 +8,7 @@ using Shared.Redis.Services;
 
 namespace DistributedBanking.Processing.Listeners.Identity;
 
-public class EndUserDeletionListener : BaseListener<string, EndUserDeletionMessage, OperationStatusModel>
+public class EndUserDeletionListener : BaseListener<string, EndUserDeletionMessage, OperationResult>
 {
     private readonly IIdentityService _identityService;
 
@@ -27,12 +27,12 @@ public class EndUserDeletionListener : BaseListener<string, EndUserDeletionMessa
         return base.FilterMessage(messageWrapper) && !string.IsNullOrWhiteSpace(messageWrapper.Message.EndUserId);
     }
 
-    protected override async Task<ListenerResponse<OperationStatusModel>> ProcessMessage(
+    protected override async Task<ListenerResponse<OperationResult>> ProcessMessage(
         MessageWrapper<EndUserDeletionMessage> messageWrapper)
     {
         var deletionResult = await _identityService.DeleteUser(messageWrapper.Message.EndUserId); //todo inconsistency in email and ids
 
-        return new ListenerResponse<OperationStatusModel>(
+        return new ListenerResponse<OperationResult>(
             MessageOffset: messageWrapper.Offset,
             Response: deletionResult,
             ResponseChannelPattern: messageWrapper.Message.ResponseChannelPattern);
