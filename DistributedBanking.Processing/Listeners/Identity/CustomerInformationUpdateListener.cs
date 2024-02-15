@@ -32,7 +32,7 @@ public class CustomerInformationUpdateListener : BaseListener<string, CustomerIn
     protected override async Task<ListenerResponse<OperationResult>> ProcessMessage(
         MessageWrapper<CustomerInformationUpdateMessage> messageWrapper)
     {
-        var updatedInformationModel = messageWrapper.Adapt<CustomerPassportModel>();
+        var updatedInformationModel = messageWrapper.Message.Adapt<CustomerPassportModel>();
         var updateResult =  await _identityService.UpdateCustomerPersonalInformation(messageWrapper.Message.CustomerId, updatedInformationModel);
 
         return new ListenerResponse<OperationResult>(

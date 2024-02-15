@@ -39,7 +39,7 @@ public class TransactionsListener : BaseListener<string, TransactionMessage, Ope
         {
             case TransactionType.Deposit:
             {
-                var transactionModel = messageWrapper.Adapt<OneWayTransactionModel>();
+                var transactionModel = messageWrapper.Message.Adapt<OneWayTransactionModel>();
                 var depositResult = await _transactionService.Deposit(transactionModel);
 
                 return new ListenerResponse<OperationResult>(messageWrapper.Offset, depositResult, messageWrapper.Message.ResponseChannelPattern);
