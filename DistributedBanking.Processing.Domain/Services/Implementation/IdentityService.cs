@@ -86,7 +86,7 @@ public class IdentityService : IIdentityService
     
     public async Task<OperationResult> DeleteUser(string id)
     {
-        var appUser = await _usersManager.GetByIdAsync(id); // todo fix inconsistency in Ids and emails between here and client
+        var appUser = await _usersManager.GetByIdAsync(id);
         if (appUser == null)
         {
             return OperationResult.BadRequest("Specified user does not exist");
@@ -97,7 +97,7 @@ public class IdentityService : IIdentityService
             var customer = await _customersRepository.GetAsync(new ObjectId(appUser.EndUserId));
             if (customer == null)
             {
-                _logger.LogError("Customer with the ID specified in end user does not exist");
+                _logger.LogError("Customer with the end ID {Id} specified in service user does not exist", appUser.EndUserId);
                 return OperationResult.InternalFail("Error occured while trying to delete user. Try again later");
             }
             foreach (var customerAccountId in customer.Accounts)
@@ -107,7 +107,7 @@ public class IdentityService : IIdentityService
                 
             await _customersRepository.RemoveAsync(new ObjectId(appUser.EndUserId));
         }
-        else if (await _usersManager.IsInRoleAsync(appUser.Id, RoleNames.Worker))
+        else
         {
             await _workersRepository.RemoveAsync(new ObjectId(appUser.EndUserId));
         }
@@ -135,7 +135,8 @@ public class IdentityService : IIdentityService
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "Unable to update personal information. Try again later");
+            _logger.LogError(exception, "Error occurred while trying to update personal information for customer with ID {Id}",
+                customerId);
             throw;
         }
     }

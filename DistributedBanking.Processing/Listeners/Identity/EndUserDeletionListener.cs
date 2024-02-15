@@ -30,7 +30,7 @@ public class EndUserDeletionListener : BaseListener<string, EndUserDeletionMessa
     protected override async Task<ListenerResponse<OperationResult>> ProcessMessage(
         MessageWrapper<EndUserDeletionMessage> messageWrapper)
     {
-        var deletionResult = await _identityService.DeleteUser(messageWrapper.Message.EndUserId); //todo inconsistency in email and ids
+        var deletionResult = await _identityService.DeleteUser(messageWrapper.Message.EndUserId);
 
         return new ListenerResponse<OperationResult>(
             MessageOffset: messageWrapper.Offset,
