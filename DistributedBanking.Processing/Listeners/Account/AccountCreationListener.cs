@@ -32,7 +32,7 @@ public class AccountCreationListener : BaseListener<string, AccountCreationMessa
     protected override async Task<ListenerResponse<OperationResult<AccountOwnedResponseModel>>> ProcessMessage(
         MessageWrapper<AccountCreationMessage> messageWrapper)
     {
-        var accountCreationModel = messageWrapper.Adapt<AccountCreationModel>();
+        var accountCreationModel = messageWrapper.Message.Adapt<AccountCreationModel>();
         var accountCreationResult = await _accountService.CreateAsync(messageWrapper.Message.CustomerId, accountCreationModel);
 
         return new ListenerResponse<OperationResult<AccountOwnedResponseModel>>(
