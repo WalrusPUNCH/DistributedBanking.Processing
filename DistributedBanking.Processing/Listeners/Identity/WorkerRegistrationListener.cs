@@ -32,7 +32,7 @@ public class WorkerRegistrationListener : BaseListener<string, WorkerRegistratio
     protected override async Task<ListenerResponse<OperationResult>> ProcessMessage(
         MessageWrapper<WorkerRegistrationMessage> messageWrapper)
     {
-        var registrationModel = messageWrapper.Message.Adapt<EndUserRegistrationModel>();
+        var registrationModel = messageWrapper.Message.Adapt<WorkerRegistrationModel>();
         var registrationResult = await _identityService.RegisterUser(registrationModel, messageWrapper.Message.Role);
 
         return new ListenerResponse<OperationResult>(

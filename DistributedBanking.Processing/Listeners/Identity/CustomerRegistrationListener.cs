@@ -33,7 +33,7 @@ public class CustomerRegistrationListener : BaseListener<string, UserRegistratio
     protected override async Task<ListenerResponse<OperationResult>> ProcessMessage(
         MessageWrapper<UserRegistrationMessage> messageWrapper)
     {
-        var registrationModel = messageWrapper.Adapt<EndUserRegistrationModel>();
+        var registrationModel = messageWrapper.Message.Adapt<EndUserRegistrationModel>();
         var registrationResult = await _identityService.RegisterUser(registrationModel, RoleNames.Customer);
 
         return new ListenerResponse<OperationResult>(

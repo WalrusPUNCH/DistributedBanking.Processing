@@ -23,6 +23,11 @@ public class RolesManager : IRolesManager
     {
         try
         {
+            if (await RoleExists(role.NormalizedName))
+            {
+                return OperationResult.BadRequest("Role with the same name already exists");
+            }
+
             await _rolesRepository.AddAsync(role);
             return OperationResult.Success();
         }

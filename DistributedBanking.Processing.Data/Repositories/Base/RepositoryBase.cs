@@ -1,7 +1,7 @@
-﻿using System.Linq.Expressions;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Driver;
 using Shared.Data.Entities;
+using System.Linq.Expressions;
 using TransactionalClock.Integration;
 
 namespace DistributedBanking.Processing.Data.Repositories.Base;
@@ -10,7 +10,7 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
 {
     protected readonly IMongoCollection<T> Collection;
     private readonly FilterDefinitionBuilder<T> _filterBuilder = Builders<T>.Filter;
-    private readonly MongoCollectionSettings _mongoCollectionSettings = new() { GuidRepresentation = GuidRepresentation.Standard };
+   // private readonly MongoCollectionSettings _mongoCollectionSettings = new() { GuidRepresentation = GuidRepresentation.Standard };
     
     private readonly string _databaseName;
     private readonly string _collectionName;
@@ -26,23 +26,17 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
             database.CreateCollection(collectionName);
         }
         
-        Collection = database.GetCollection<T>(collectionName, _mongoCollectionSettings);
+        Collection = database.GetCollection<T>(collectionName/*, _mongoCollectionSettings*/);
         
         _databaseName = database.DatabaseNamespace.DatabaseName;
         _collectionName = collectionName;
         
         _transactionalClockClient = transactionalClockClient;
     }
-    
+
     public virtual async Task<IReadOnlyCollection<T>> GetAllAsync()
     {
-        Collection.FindOneAndUpdate(_filterBuilder.Empty, null);
-        return await Collection.Find(_filterBuilder.Empty).ToListAsync();
-    }
-
-    public virtual async Task<IReadOnlyCollection<T>> GetAllAsync(Expression<Func<T, bool>> filter)
-    {
-        return await Collection.Find(filter).ToListAsync();
+        return await Collection.Find(FilterDefinition<T>.Empty).ToListAsync();
     }
 
     public virtual async Task<T?> GetAsync(ObjectId id)
