@@ -107,6 +107,12 @@ public static class ServiceCollectionExtensions
         TypeAdapterConfig<string, ObjectId>.NewConfig()
             .MapWith(value => new ObjectId(value));
 
+        TypeAdapterConfig<TransactionMessage, OneWaySecuredTransactionModel>.NewConfig()
+            .Map(dest => dest.SecurityCode, src => src.SourceSecurityCode);
+
+        TypeAdapterConfig<TransactionMessage, TwoWayTransactionModel>.NewConfig()
+           .Map(dest => dest.SourceAccountSecurityCode, src => src.SourceSecurityCode);
+
         return services;
     }
     

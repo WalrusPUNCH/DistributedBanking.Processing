@@ -46,14 +46,14 @@ public class TransactionsListener : BaseListener<string, TransactionMessage, Ope
             }
             case TransactionType.Withdrawal:
             {
-                var transactionModel = messageWrapper.Adapt<OneWaySecuredTransactionModel>();
+                var transactionModel = messageWrapper.Message.Adapt<OneWaySecuredTransactionModel>();
                 var withdrawalResult = await _transactionService.Withdraw(transactionModel);
 
                 return new ListenerResponse<OperationResult>(messageWrapper.Offset, withdrawalResult, messageWrapper.Message.ResponseChannelPattern);
             }
             case TransactionType.Transfer:
             {
-                var transactionModel = messageWrapper.Adapt<TwoWayTransactionModel>();
+                var transactionModel = messageWrapper.Message.Adapt<TwoWayTransactionModel>();
                 var transferResult = await _transactionService.Transfer(transactionModel);
 
                 return new ListenerResponse<OperationResult>(messageWrapper.Offset, transferResult, messageWrapper.Message.ResponseChannelPattern);
