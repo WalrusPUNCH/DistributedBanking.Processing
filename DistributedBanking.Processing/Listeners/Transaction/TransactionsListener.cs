@@ -19,8 +19,7 @@ public class TransactionsListener : BaseListener<string, TransactionMessage, Ope
         IKafkaConsumerService<string, TransactionMessage> transactionsConsumer,
         ITransactionService transactionService,
         IRedisSubscriber redisSubscriber,
-        IRedisProvider redisProvider,
-        ILogger<TransactionsListener> logger) : base(transactionsConsumer, redisSubscriber, redisProvider, logger)
+        ILogger<TransactionsListener> logger) : base(transactionsConsumer, redisSubscriber, logger)
     {
         _transactionService = transactionService;
     }

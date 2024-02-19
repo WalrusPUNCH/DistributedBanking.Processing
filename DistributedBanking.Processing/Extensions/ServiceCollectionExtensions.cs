@@ -46,6 +46,7 @@ public static class ServiceCollectionExtensions
     internal static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddMapster();
+        services.AddMemoryCache();
 
         services
             .AddMongoDatabase(configuration)

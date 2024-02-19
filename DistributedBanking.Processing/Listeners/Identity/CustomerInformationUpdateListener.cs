@@ -18,8 +18,7 @@ public class CustomerInformationUpdateListener : BaseListener<string, CustomerIn
         IKafkaConsumerService<string, CustomerInformationUpdateMessage> informationUpdateConsumer,
         IIdentityService identityService,
         IRedisSubscriber redisSubscriber,
-        IRedisProvider redisProvider,
-        ILogger<CustomerInformationUpdateListener> logger) : base(informationUpdateConsumer, redisSubscriber, redisProvider, logger)
+        ILogger<CustomerInformationUpdateListener> logger) : base(informationUpdateConsumer, redisSubscriber, logger)
     {
         _identityService = identityService;
     }

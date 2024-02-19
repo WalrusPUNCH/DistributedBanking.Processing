@@ -1,4 +1,5 @@
 ﻿using DistributedBanking.Processing.Data.Repositories.Base;
+using Microsoft.Extensions.Caching.Memory;
 using MongoDB.Driver;
 using Shared.Data.Entities.Constants;
 using Shared.Data.Entities.EndUsers;
@@ -12,9 +13,11 @@ public class CustomersRepository : RepositoryBase<CustomerEntity>, ICustomersRep
     private IMongoDatabase _database;
     
     public CustomersRepository(
+        IMemoryCache memoryCache,
         IMongoDbFactory mongoDbFactory,
         ITransactionalClockClient transactionalClockClient) 
         : base(
+            memoryCache,
             transactionalClockClient, 
             mongoDbFactory.GetDatabase(), 
             CollectionNames.EndUsers)

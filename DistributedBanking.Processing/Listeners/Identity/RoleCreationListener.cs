@@ -17,8 +17,7 @@ public class RoleCreationListener : BaseListener<string, RoleCreationMessage, Op
         IKafkaConsumerService<string, RoleCreationMessage> roleCreationConsumer,
         IRolesManager rolesManager,
         IRedisSubscriber redisSubscriber,
-        IRedisProvider redisProvider,
-        ILogger<RoleCreationListener> logger) : base(roleCreationConsumer, redisSubscriber, redisProvider, logger)
+        ILogger<RoleCreationListener> logger) : base(roleCreationConsumer, redisSubscriber, logger)
     {
         _rolesManager = rolesManager;
     }

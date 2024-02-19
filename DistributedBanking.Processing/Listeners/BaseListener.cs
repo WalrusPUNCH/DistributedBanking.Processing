@@ -13,18 +13,15 @@ public abstract class BaseListener<TMessageKey, TMessageValue, TResponse> : Back
     private const int MaxDelaySeconds = 60;
     private readonly IKafkaConsumerService<TMessageKey, TMessageValue> _consumer;
     private readonly IRedisSubscriber _redisSubscriber;
-    private readonly IRedisProvider _redisProvider;
     protected readonly ILogger<BaseListener<TMessageKey, TMessageValue, TResponse>> Logger;
 
     protected BaseListener(
         IKafkaConsumerService<TMessageKey, TMessageValue> workerRegistrationConsumer,
         IRedisSubscriber redisSubscriber,
-        IRedisProvider redisProvider,
         ILogger<BaseListener<TMessageKey, TMessageValue, TResponse>> logger)
     {
         _consumer = workerRegistrationConsumer;
         _redisSubscriber = redisSubscriber;
-        _redisProvider = redisProvider;
         Logger = logger;
     }
 
@@ -44,7 +41,6 @@ public abstract class BaseListener<TMessageKey, TMessageValue, TResponse> : Back
     protected virtual async Task OnMessageResponse(ListenerResponse<TResponse> listenerResponse)
     {
         var responseChannel = listenerResponse.ResponseChannel;
-        await _redisProvider.SetAsync(responseChannel, listenerResponse.Response, TimeSpan.FromMinutes(5)); // todo this is temp
         await _redisSubscriber.PubAsync(responseChannel, listenerResponse.Response);
     }
 
@@ -57,10 +53,11 @@ public abstract class BaseListener<TMessageKey, TMessageValue, TResponse> : Back
 
         _consumer
             .Consume(stoppingToken)
-            .Do(_ => Logger.LogInformation("Listener {Listener} has received a message", this.GetType().Name))
             .Where(FilterMessage)
             .Select(message => Observable.FromAsync(async () =>
                 {
+                    Logger.LogInformation("Listener {Listener} has received a message", this.GetType().Name);
+                    
                     var listenerResponse = await ProcessMessage(message);
                     await OnMessageResponse(listenerResponse);
                 })
@@ -71,7 +68,7 @@ public abstract class BaseListener<TMessageKey, TMessageValue, TResponse> : Back
                     return Observable.Timer(delay); 
                 }))
             )
-            .Merge() //todo consider
+            .Concat()
             .RetryWhen(errors => errors.SelectMany((exception, retry) => 
             {
                 var delay = TimeSpan.FromSeconds(Math.Max(MaxDelaySeconds, retry * 10));
