@@ -19,8 +19,7 @@ public class CustomerRegistrationListener : BaseListener<string, UserRegistratio
         IKafkaConsumerService<string, UserRegistrationMessage> userRegistrationConsumer,
         IIdentityService identityService,
         IRedisSubscriber redisSubscriber,
-        IRedisProvider redisProvider,
-        ILogger<CustomerRegistrationListener> logger) : base(userRegistrationConsumer, redisSubscriber, redisProvider, logger)
+        ILogger<CustomerRegistrationListener> logger) : base(userRegistrationConsumer, redisSubscriber, logger)
     {
         _identityService = identityService;
     }

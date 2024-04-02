@@ -16,8 +16,7 @@ public class EndUserDeletionListener : BaseListener<string, EndUserDeletionMessa
         IKafkaConsumerService<string, EndUserDeletionMessage> endUserDeletionConsumer,
         IIdentityService identityService,
         IRedisSubscriber redisSubscriber,
-        IRedisProvider redisProvider,
-        ILogger<EndUserDeletionListener> logger) : base(endUserDeletionConsumer, redisSubscriber, redisProvider, logger)
+        ILogger<EndUserDeletionListener> logger) : base(endUserDeletionConsumer, redisSubscriber, logger)
     {
         _identityService = identityService;
     }

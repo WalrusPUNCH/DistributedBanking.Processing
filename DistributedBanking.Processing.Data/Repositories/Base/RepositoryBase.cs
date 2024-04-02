@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson;
+﻿using Microsoft.Extensions.Caching.Memory;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using Shared.Data.Entities;
 using System.Linq.Expressions;
@@ -8,15 +9,16 @@ namespace DistributedBanking.Processing.Data.Repositories.Base;
 
 public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
 {
+    private readonly IMemoryCache _memoryCache;
     protected readonly IMongoCollection<T> Collection;
     private readonly FilterDefinitionBuilder<T> _filterBuilder = Builders<T>.Filter;
-   // private readonly MongoCollectionSettings _mongoCollectionSettings = new() { GuidRepresentation = GuidRepresentation.Standard };
     
     private readonly string _databaseName;
     private readonly string _collectionName;
     private readonly ITransactionalClockClient _transactionalClockClient;
     
     protected RepositoryBase(
+        IMemoryCache memoryCache,
         ITransactionalClockClient transactionalClockClient,
         IMongoDatabase database,
         string collectionName)
@@ -26,9 +28,10 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
             database.CreateCollection(collectionName);
         }
         
-        Collection = database.GetCollection<T>(collectionName/*, _mongoCollectionSettings*/);
+        Collection = database.GetCollection<T>(collectionName);
         
         _databaseName = database.DatabaseNamespace.DatabaseName;
+        _memoryCache = memoryCache;
         _collectionName = collectionName;
         
         _transactionalClockClient = transactionalClockClient;
@@ -36,52 +39,94 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
 
     public virtual async Task<IReadOnlyCollection<T>> GetAllAsync()
     {
-        return await Collection.Find(FilterDefinition<T>.Empty).ToListAsync();
+        var baseEntities = await Collection.Find(FilterDefinition<T>.Empty).ToListAsync();
+        
+        var cachedEntities = baseEntities.Select(entity =>
+                _memoryCache.TryGetValue<T>(entity.Id, out var value)
+                    ? value!
+                    : entity)
+            .ToList();
+
+        return cachedEntities;
     }
 
     public virtual async Task<T?> GetAsync(ObjectId id)
     {
         var filter = _filterBuilder.Eq(e => e.Id, id);
-        return await Collection.Find(filter).FirstOrDefaultAsync();
+        _memoryCache.TryGetValue<T>(id, out var value);
+        
+        return value ?? await Collection.Find(filter).FirstOrDefaultAsync();
     }
 
     public virtual async Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>>? filter)
     {
-        return await Collection.Find(filter ?? FilterDefinition<T>.Empty).ToListAsync();
+        var baseEntities = await Collection.Find(filter ?? FilterDefinition<T>.Empty).ToListAsync();
+
+        var cachedEntities = baseEntities.Select(entity =>
+                _memoryCache.TryGetValue<T>(entity.Id, out var value)
+                    ? value!
+                    : entity)
+            .ToList();
+
+        return cachedEntities;
     }
 
-    public virtual async Task AddAsync(T entity)
+    public virtual async Task AddAsync(T entity, int priority = 50)
     {
         if (entity == null)
         {
             throw new ArgumentNullException(nameof(entity));
         }
 
-        var transactionalClockResponse = await _transactionalClockClient.Create(
-            database: _databaseName,
-            collection: _collectionName,
-            entity);
+        try
+        {
+            _memoryCache.Set(entity.Id, entity, TimeSpan.FromSeconds(2));
 
-        entity.Id = transactionalClockResponse.Id;
+            var transactionalClockResponse = await _transactionalClockClient.Create(
+                database: _databaseName,
+                collection: _collectionName,
+                payload: entity,
+                priority: priority);
+
+            entity.Id = transactionalClockResponse.Id;
+        }
+        catch (Exception)
+        {
+            _memoryCache.Remove(entity.Id);
+            throw;
+        }
     }
 
-    public virtual async Task UpdateAsync(T entity)
+    public virtual async Task UpdateAsync(T entity, int priority = 50)
     {
         if (entity == null)
         {
             throw new ArgumentNullException(nameof(entity));
         }
+
+        try
+        {
+            _memoryCache.Set(entity.Id, entity, TimeSpan.FromSeconds(2));
         
-        await _transactionalClockClient.Update(
-            id: entity.Id.ToString(),
-            database: _databaseName,
-            collection: _collectionName,
-            createdAt: DateTime.UtcNow.ToUniversalTime().ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ssZ"),
-            entity);
+            await _transactionalClockClient.Update(
+                id: entity.Id.ToString(),
+                database: _databaseName,
+                collection: _collectionName,
+                createdAt: DateTime.UtcNow.ToUniversalTime().ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ssZ"),
+                payload: entity,
+                priority: priority);
+        }
+        catch (Exception)
+        {
+            _memoryCache.Remove(entity.Id);
+            throw;
+        }
     }
 
     public virtual async Task RemoveAsync(ObjectId id)
     {
+        _memoryCache.Remove(id);
+
         await _transactionalClockClient.Delete(
             id: id.ToString(),
             database: _databaseName,

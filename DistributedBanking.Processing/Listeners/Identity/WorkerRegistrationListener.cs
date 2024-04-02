@@ -18,8 +18,7 @@ public class WorkerRegistrationListener : BaseListener<string, WorkerRegistratio
         IKafkaConsumerService<string, WorkerRegistrationMessage> workerRegistrationConsumer,
         IIdentityService identityService,
         IRedisSubscriber redisSubscriber,
-        IRedisProvider redisProvider,
-        ILogger<WorkerRegistrationListener> logger) : base(workerRegistrationConsumer, redisSubscriber, redisProvider, logger)
+        ILogger<WorkerRegistrationListener> logger) : base(workerRegistrationConsumer, redisSubscriber, logger)
     {
         _identityService = identityService;
     }

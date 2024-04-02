@@ -17,9 +17,8 @@ public class AccountCreationListener : BaseListener<string, AccountCreationMessa
     public AccountCreationListener(
         IKafkaConsumerService<string, AccountCreationMessage> accountCreationConsumer,
         IRedisSubscriber redisSubscriber,
-        IRedisProvider redisProvider,
         IAccountService accountService,
-        ILogger<AccountCreationListener> logger) : base(accountCreationConsumer, redisSubscriber, redisProvider, logger)
+        ILogger<AccountCreationListener> logger) : base(accountCreationConsumer, redisSubscriber, logger)
     {
         _accountService = accountService;
     }

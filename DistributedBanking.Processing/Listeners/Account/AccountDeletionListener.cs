@@ -15,9 +15,8 @@ public class AccountDeletionListener : BaseListener<string, AccountDeletionMessa
     public AccountDeletionListener(
         IKafkaConsumerService<string, AccountDeletionMessage> accountDeletionConsumer,
         IRedisSubscriber redisSubscriber,
-        IRedisProvider redisProvider,
         IAccountService accountService,
-        ILogger<AccountDeletionListener> logger) : base(accountDeletionConsumer, redisSubscriber, redisProvider, logger)
+        ILogger<AccountDeletionListener> logger) : base(accountDeletionConsumer, redisSubscriber, logger)
     {
         _accountService = accountService;
     }
