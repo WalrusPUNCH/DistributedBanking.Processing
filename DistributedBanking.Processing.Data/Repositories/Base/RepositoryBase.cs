@@ -71,7 +71,7 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
         return cachedEntities;
     }
 
-    public virtual async Task AddAsync(T entity)
+    public virtual async Task AddAsync(T entity, int priority = 50)
     {
         if (entity == null)
         {
@@ -85,7 +85,8 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
             var transactionalClockResponse = await _transactionalClockClient.Create(
                 database: _databaseName,
                 collection: _collectionName,
-                entity);
+                payload: entity,
+                priority: priority);
 
             entity.Id = transactionalClockResponse.Id;
         }
@@ -96,7 +97,7 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
         }
     }
 
-    public virtual async Task UpdateAsync(T entity)
+    public virtual async Task UpdateAsync(T entity, int priority = 50)
     {
         if (entity == null)
         {
@@ -112,7 +113,8 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
                 database: _databaseName,
                 collection: _collectionName,
                 createdAt: DateTime.UtcNow.ToUniversalTime().ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ssZ"),
-                entity);
+                payload: entity,
+                priority: priority);
         }
         catch (Exception)
         {

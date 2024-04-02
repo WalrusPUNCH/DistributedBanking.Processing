@@ -42,10 +42,10 @@ public class TransactionService : ITransactionService
             }
             
             account.Balance += depositTransactionModel.Amount;
-            await _accountsRepository.UpdateAsync(account);
+            await _accountsRepository.UpdateAsync(account, 10);
 
             var transaction = depositTransactionModel.AdaptToEntity(TransactionType.Deposit);
-            await _transactionsRepository.AddAsync(transaction);
+            await _transactionsRepository.AddAsync(transaction, 10);
             
             return OperationResult.Success();
         }
@@ -81,10 +81,10 @@ public class TransactionService : ITransactionService
             }
             
             account.Balance -= withdrawTransactionModel.Amount;
-            await _accountsRepository.UpdateAsync(account);
+            await _accountsRepository.UpdateAsync(account, 10);
 
             var transaction = withdrawTransactionModel.AdaptToEntity(TransactionType.Withdrawal);
-            await _transactionsRepository.AddAsync(transaction);
+            await _transactionsRepository.AddAsync(transaction, 10);
             
             return OperationResult.Success();
         }
@@ -129,11 +129,11 @@ public class TransactionService : ITransactionService
             sourceAccount.Balance -= transferTransactionModel.Amount;
             destinationAccount.Balance += transferTransactionModel.Amount;
             
-            await _accountsRepository.UpdateAsync(sourceAccount);
-            await _accountsRepository.UpdateAsync(destinationAccount);
+            await _accountsRepository.UpdateAsync(sourceAccount, 10);
+            await _accountsRepository.UpdateAsync(destinationAccount, 10);
 
             var transaction = transferTransactionModel.AdaptToEntity(TransactionType.Transfer);
-            await _transactionsRepository.AddAsync(transaction);
+            await _transactionsRepository.AddAsync(transaction, 10);
             
             return OperationResult.Success();
         }
