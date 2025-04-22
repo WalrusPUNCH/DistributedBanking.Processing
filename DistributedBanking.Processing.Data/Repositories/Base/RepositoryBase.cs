@@ -1,9 +1,11 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using Confluent.Kafka;
+using Microsoft.Extensions.Caching.Memory;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Shared.Data.Entities;
+using Shared.Kafka.Messages;
+using Shared.Kafka.Services;
 using System.Linq.Expressions;
-using TransactionalClock.Integration;
 
 namespace DistributedBanking.Processing.Data.Repositories.Base;
 
@@ -13,14 +15,13 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
     protected readonly IMongoCollection<T> Collection;
     private readonly FilterDefinitionBuilder<T> _filterBuilder = Builders<T>.Filter;
     
-    private readonly string _databaseName;
     private readonly string _collectionName;
-    private readonly ITransactionalClockClient _transactionalClockClient;
+    private readonly IKafkaProducerService<Command> _commandsProducer; 
     
     protected RepositoryBase(
         IMemoryCache memoryCache,
-        ITransactionalClockClient transactionalClockClient,
         IMongoDatabase database,
+        IKafkaProducerService<Command> commandsProducer,
         string collectionName)
     {
         if (!database.ListCollectionNames().ToList().Contains(collectionName))
@@ -30,11 +31,10 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
         
         Collection = database.GetCollection<T>(collectionName);
         
-        _databaseName = database.DatabaseNamespace.DatabaseName;
         _memoryCache = memoryCache;
         _collectionName = collectionName;
-        
-        _transactionalClockClient = transactionalClockClient;
+
+        _commandsProducer = commandsProducer;
     }
 
     public virtual async Task<IReadOnlyCollection<T>> GetAllAsync()
@@ -82,13 +82,20 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
         {
             _memoryCache.Set(entity.Id, entity, TimeSpan.FromSeconds(2));
 
-            var transactionalClockResponse = await _transactionalClockClient.Create(
-                database: _databaseName,
-                collection: _collectionName,
-                payload: entity,
-                priority: priority);
-
-            entity.Id = transactionalClockResponse.Id;
+            var command = new Command(
+                _collectionName,
+                entity.Id.ToString(),
+                CommandType.Create,
+                DateTime.UtcNow, 
+                entity,
+                entity.GetType(),
+                priority);
+            
+            var messageDelivery = await _commandsProducer.ProduceAsync(command);
+            if (messageDelivery.Status != PersistenceStatus.Persisted)
+            {
+                throw new KafkaException(new Error(ErrorCode.Unknown, "Message delivery failed"));
+            }
         }
         catch (Exception)
         {
@@ -108,13 +115,20 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
         {
             _memoryCache.Set(entity.Id, entity, TimeSpan.FromSeconds(2));
         
-            await _transactionalClockClient.Update(
-                id: entity.Id.ToString(),
-                database: _databaseName,
-                collection: _collectionName,
-                createdAt: DateTime.UtcNow.ToUniversalTime().ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ssZ"),
-                payload: entity,
-                priority: priority);
+            var command = new Command(
+                _collectionName,
+                entity.Id.ToString(),
+                CommandType.Update,
+                DateTime.UtcNow, 
+                entity,
+                entity.GetType(),
+                priority);
+            
+            var messageDelivery = await _commandsProducer.ProduceAsync(command);
+            if (messageDelivery.Status != PersistenceStatus.Persisted)
+            {
+                throw new KafkaException(new Error(ErrorCode.Unknown, "Message delivery failed"));
+            }
         }
         catch (Exception)
         {
@@ -127,9 +141,18 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
     {
         _memoryCache.Remove(id);
 
-        await _transactionalClockClient.Delete(
-            id: id.ToString(),
-            database: _databaseName,
-            collection: _collectionName);
+        var command = new Command(
+            _collectionName,
+            id.ToString(),
+            CommandType.Delete,
+            DateTime.UtcNow, 
+            null,
+            null);
+            
+        var messageDelivery = await _commandsProducer.ProduceAsync(command);
+        if (messageDelivery.Status != PersistenceStatus.Persisted)
+        {
+            throw new KafkaException(new Error(ErrorCode.Unknown, "Message delivery failed"));
+        }
     }
 }
