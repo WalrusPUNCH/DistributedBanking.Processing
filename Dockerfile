@@ -11,7 +11,6 @@ COPY ["DistributedBanking.Processing/DistributedBanking.Processing.csproj", "Dis
 COPY ["DistributedBanking.Processing.Data/DistributedBanking.Processing.Data.csproj", "DistributedBanking.Processing.Data/"]
 COPY ["DistributedBanking.Shared/Contracts/Contracts.csproj", "DistributedBanking.Shared/Contracts/"]
 COPY ["DistributedBanking.Shared/Shared.Data/Shared.Data.csproj", "DistributedBanking.Shared/Shared.Data/"]
-COPY ["TransactionalClock.Integration/TransactionalClock.Integration.csproj", "TransactionalClock.Integration/"]
 COPY ["DistributedBanking.Processing.Domain/DistributedBanking.Processing.Domain.csproj", "DistributedBanking.Processing.Domain/"]
 COPY ["DistributedBanking.Shared/Shared.Kafka/Shared.Kafka.csproj", "DistributedBanking.Shared/Shared.Kafka/"]
 COPY ["DistributedBanking.Shared/Shared.Messaging/Shared.Messaging.csproj", "DistributedBanking.Shared/Shared.Messaging/"]

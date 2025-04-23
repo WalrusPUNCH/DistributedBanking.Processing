@@ -9,27 +9,22 @@ using DistributedBanking.Processing.Listeners.Account;
 using DistributedBanking.Processing.Listeners.Identity;
 using DistributedBanking.Processing.Listeners.Transaction;
 using Mapster;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson.Serialization.Serializers;
-using Refit;
-using Shared.Data.Converters;
 using Shared.Data.Entities;
 using Shared.Data.Services;
 using Shared.Data.Services.Implementation.MongoDb;
 using Shared.Kafka.Extensions;
+using Shared.Kafka.Messages;
 using Shared.Kafka.Options;
 using Shared.Messaging.Messages.Account;
 using Shared.Messaging.Messages.Identity;
 using Shared.Messaging.Messages.Identity.Registration;
 using Shared.Messaging.Messages.Transaction;
 using Shared.Redis.Extensions;
-using System.Text.Json;
-using TransactionalClock.Integration;
-using TransactionalClock.Integration.DelegationHandlers;
-using TransactionalClock.Integration.Options;
+
 // ReSharper disable UnusedMethodReturnValue.Local
 
 namespace DistributedBanking.Processing.Extensions;
@@ -51,8 +46,6 @@ public static class ServiceCollectionExtensions
         services
             .AddMongoDatabase(configuration)
             .AddDataRepositories();
-
-        services.AddTransactionalClockIntegration(configuration);
         
         services
             .AddTransient<IRolesManager, RolesManager>()
@@ -64,6 +57,7 @@ public static class ServiceCollectionExtensions
         
         services.AddRedis(configuration);
         services.AddKafkaConsumers(configuration);
+        services.AddKafkaProducer(configuration);
         
         return services;
     }
@@ -78,6 +72,13 @@ public static class ServiceCollectionExtensions
         services.AddKafkaConsumer<string, AccountCreationMessage>(configuration, KafkaTopicSource.AccountCreation);
         services.AddKafkaConsumer<string, AccountDeletionMessage>(configuration, KafkaTopicSource.AccountDeletion);
         services.AddKafkaConsumer<string, TransactionMessage>(configuration, KafkaTopicSource.TransactionsCreation);
+        
+        return services;
+    }
+    
+    private static IServiceCollection AddKafkaProducer(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddKafkaProducer<Command>(configuration, KafkaTopicSource.Commands);
         
         return services;
     }
@@ -132,6 +133,10 @@ public static class ServiceCollectionExtensions
         };
         ConventionRegistry.Register("CamelCase_StringEnum_IgnoreNull_Convention", pack, _ => true);
         
+        var objectSerializer = new ObjectSerializer(type => ObjectSerializer.DefaultAllowedTypes(type) || type.FullName.StartsWith("Shared.Data.Entities"));
+        BsonSerializer.RegisterSerializer(objectSerializer);
+        
+        BsonSerializer.RegisterSerializer(new DecimalSerializer(BsonType.Decimal128));
         BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
         BsonSerializer.RegisterSerializer(new DateTimeSerializer(DateTimeKind.Utc));
 
@@ -148,31 +153,6 @@ public static class ServiceCollectionExtensions
         services.AddTransient<ICustomersRepository, CustomersRepository>();
         services.AddTransient<IWorkersRepository, WorkersRepository>();
         services.AddTransient<ITransactionsRepository, TransactionsRepository>();
-        
-        return services;
-    }
-    
-    private static IServiceCollection AddTransactionalClockIntegration(this IServiceCollection services, IConfiguration configuration)
-    {
-        var transactionalClockOptions = configuration.GetSection(nameof(TransactionalClockOptions)).Get<TransactionalClockOptions>();
-        ArgumentNullException.ThrowIfNull(transactionalClockOptions);
-       
-        var refitSettings = new RefitSettings
-        {
-            ContentSerializer = new SystemTextJsonContentSerializer(new JsonSerializerOptions
-            {
-                Converters = { new ObjectIdJsonConverter() }
-            })
-        };
-
-        var httpClientBuilder = services
-            .AddRefitClient<ITransactionalClockClient>(refitSettings)
-            .ConfigureHttpClient(c => c.BaseAddress = new Uri(transactionalClockOptions.TransactionalClockHostUrl));
-        
-#if DEBUG
-        services.TryAddScoped<HttpDebugLoggingHandler>();
-        httpClientBuilder.AddHttpMessageHandler<HttpDebugLoggingHandler>();
-#endif
         
         return services;
     }
