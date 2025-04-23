@@ -91,7 +91,7 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
                 entity.GetType(),
                 priority);
             
-            var messageDelivery = await _commandsProducer.ProduceAsync(command);
+            var messageDelivery = await _commandsProducer.ProduceAsync(command, entity.Id.ToString());
             if (messageDelivery.Status != PersistenceStatus.Persisted)
             {
                 throw new KafkaException(new Error(ErrorCode.Unknown, "Message delivery failed"));
@@ -124,7 +124,7 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
                 entity.GetType(),
                 priority);
             
-            var messageDelivery = await _commandsProducer.ProduceAsync(command);
+            var messageDelivery = await _commandsProducer.ProduceAsync(command, entity.Id.ToString());
             if (messageDelivery.Status != PersistenceStatus.Persisted)
             {
                 throw new KafkaException(new Error(ErrorCode.Unknown, "Message delivery failed"));
@@ -149,7 +149,7 @@ public class RepositoryBase<T> : IRepositoryBase<T> where T : BaseEntity
             null,
             null);
             
-        var messageDelivery = await _commandsProducer.ProduceAsync(command);
+        var messageDelivery = await _commandsProducer.ProduceAsync(command, id.ToString());
         if (messageDelivery.Status != PersistenceStatus.Persisted)
         {
             throw new KafkaException(new Error(ErrorCode.Unknown, "Message delivery failed"));
